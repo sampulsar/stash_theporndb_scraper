@@ -43,6 +43,7 @@ manual_disambiguate = False #Set to True to prompt for a selection.  (Overwritte
 ambiguous_tag = "ThePornDB Ambiguous" #Tag to be added to scenes we skip due to ambiguous scraping.  Set to None (without quotes) to disable
 #Disambiguation options for when a specific performer can't be verified
 tag_ambiguous_performers = True  # If True, will tag ambiguous performers (performers listed on ThePornDB only for a single site, not across sites)
+add_ambiguous_performers = False  # If True, will add ambiguous performers (performers listed on ThePornDB only for a single site, not across sites)
 confirm_questionable_aliases = True #If True, when TPBD lists an alias that we can't verify, manually prompt for config.  Otherwise they are tagged for later reprocessing
 trust_tpbd_aliases = True #If True, when TPBD lists an alias that we can't verify, just trust TBPD to be correct.  May lead to incorrect tagging
 
@@ -56,5 +57,6 @@ include_performers_in_title = True #If True, performers will be added at the beg
 male_performers_in_title = False # If True, male performers and included in the title
 clean_filename = True #If True, will try to clean up filenames before attempting scrape. Often unnecessary, as ThePornDB already does this
 compact_studio_names = True # If True, this will remove spaces from studio names added from ThePornDB
+suffix_singlename_performers = False # If True, this will add the studio name to performers with just a single name
 proxies={} # Leave empty or specify proxy like this: {'http':'http://user:pass@10.10.10.10:8000','https':'https://user:pass@10.10.10.10:8000'}
 # use_oshash = False # Set to True to use oshash values to query NOT YET SUPPORTED
