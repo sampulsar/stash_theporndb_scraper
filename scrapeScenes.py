@@ -48,15 +48,15 @@ def lreplace(pattern, sub, string):
 
 
 def scrubFileName(file_name):
-    scrubbedWords = ['MP4-(.+?)$', ' XXX ', '1080p', '720p', 'WMV-(.+?)$', '-UNKNOWN', ' x264-(.+?)$', 'DVDRip', 'WEBRIP', 'WEB', '\[PRiVATE\]', 'HEVC', 'x265', 'PRT-xpost', '-xpost', '480p', '2160p', ' SD', ' HD', '\'', '&']
-    clean_name = ""
-    clean_name = re.sub('\.', ' ', file_name)  ##replace periods
-    for word in scrubbedWords:  ##delete scrubbedWords
-        clean_name = re.sub(word, '', clean_name, 0, re.IGNORECASE)
-    
+    clean_name = file_name
     # add support for custom name cleaning
     if custom_clean_name is not None:
         clean_name = custom_clean_name(clean_name)
+    else:
+        scrubbedWords = ['MP4-(.+?)$', ' XXX ', '1080p', '720p', 'WMV-(.+?)$', '-UNKNOWN', ' x264-(.+?)$', 'DVDRip', 'WEBRIP', 'WEB', '\[PRiVATE\]', 'HEVC', 'x265', 'PRT-xpost', '-xpost', '480p', '2160p', ' SD', ' HD', '\'', '&']        
+        clean_name = re.sub('\.', ' ', clean_name)  ##replace periods
+        for word in scrubbedWords:  ##delete scrubbedWords
+            clean_name = re.sub(word, '', clean_name, 0, re.IGNORECASE)
 
     clean_name = clean_name.strip()  #trim
     return clean_name
