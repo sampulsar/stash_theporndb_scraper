@@ -612,6 +612,8 @@ class stash_interface:
         for studio in self.studios:
             if studio['name'].lower().strip() == name.lower().strip():
                 return studio
+            if studio['name'].replace(' ', '').replace('-', '').replace('\'', '').lower().strip() == name.replace(' ', '').replace('-', '').replace('\'', '').lower().strip():
+                return studio
         return None
     
     def getTagByName(self, name, add_tag_if_missing = False):
