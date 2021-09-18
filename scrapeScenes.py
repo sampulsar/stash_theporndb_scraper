@@ -31,7 +31,7 @@ if Path(__file__).with_name('custom.py').is_file():
 ###########################################################
 
 #Metadataapi API settings
-tpdb_sleep = 1  # time to sleep before each API req
+tpdb_sleep = 0.1  # time to sleep before each API req
 tpdb_ua = "stashpy/1.0.0"  # user agent
 tpdb_headers = {
     'User-Agent': tpdb_ua,
@@ -115,8 +115,9 @@ def createStashPerformerData(tpbd_performer):  #Creates stash-compliant data fro
             stash_performer["gender"] = 'INTERSEX'
     if keyIsSet(tpbd_performer, ["parent", "extras", "nationality"]):
         stash_performer["country"] = tpbd_performer["parent"]["extras"]["nationality"]
-    if keyIsSet(tpbd_performer, ["parent", "image"]):
+    if keyIsSet(tpbd_performer, ["parent", "image"] and not 'female.png' in tpbd_performer["parent"]["image"]):
         stash_performer["image"] = tpbd_performer["parent"]["image"]
+    
     return stash_performer
 
 
@@ -547,14 +548,9 @@ def addPerformer(scraped_performer):  #Adds performer using TPDB data, returns I
             if keyIsSet(freeones_data, "aliases") and keyIsSet(scraped_performer, ["parent", "aliases"]):
                 freeones_data['aliases'] = list(set(freeones_data['aliases'] + scraped_performer["parent"]['aliases']))
             stash_performer_data.update(freeones_data)
-
     image = getPerformerImageB64(scraped_performer['parent']['name'])
     if (image is not None):
         stash_performer_data["image"] = image
-    else:
-        image = getPerformerImageB64(freeones_data['name'])
-        if (image is not None):
-            stash_performer_data["image"] = image
     return my_stash.addPerformer(stash_performer_data)
 
 
@@ -633,9 +629,9 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
                     scraped_performer['parent']['name'] = scraped_performer['name']
                     scraped_performer['parent']['extra'] = scraped_performer['extra']
 
-                if (not ' ' in performer_name and config.suffix_singlename_performers):
-                    performer_name = performer_name + ' (' + scraped_scene['site']['name'] + ')'
-                    scraped_performer['name'] = performer_name
+                    if (not ' ' in performer_name and config.suffix_singlename_performers):
+                        performer_name = performer_name + ' (' + scraped_scene['site']['name'] + ')'
+                        scraped_performer['name'] = performer_name
 
                 stash_performer = my_stash.getPerformerByName(performer_name)
                 add_this_performer = False
