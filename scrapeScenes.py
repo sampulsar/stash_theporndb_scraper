@@ -118,19 +118,22 @@ def createStashPerformerData(tpbd_performer):  #Creates stash-compliant data fro
 
 def createStashStudioData(tpbd_studio):  # Creates stash-compliant data from raw data provided by TPBD
     stash_studio = {}
-    tpbd_parent_id = None
+    parent_scraped_studio = None
     if tpbd_studio["parent_id"] is not None and tpbd_studio["id"] != tpbd_studio["parent_id"]:
         tpbd_parent_id = tpbd_studio["parent_id"]
-        scraped_studio = getStudio(tpbd_parent_id)
-        stash_studio["parent_id"] = my_stash.addStudio((createStashStudioData(scraped_studio)))
+        parent_scraped_studio = getStudio(tpbd_parent_id)
     elif tpbd_studio["network_id"] is not None and tpbd_studio["id"] != tpbd_studio["network_id"]:
         tpbd_parent_id = tpbd_studio["network_id"]
-        print(tpbd_parent_id)
-        scraped_studio = getStudio(tpbd_parent_id)
-        print(scraped_studio)
-        scraped_studio["name"] = scraped_studio["name"] + " (Network)"
-        stash_studio["parent_id"] = my_stash.addStudio((createStashStudioData(scraped_studio)))
+        parent_scraped_studio = getStudio(tpbd_parent_id)
+        parent_scraped_studio["name"] = parent_scraped_studio["name"] + " (Network)"
     
+    if parent_scraped_studio is not None:
+        parent_stash_studio = my_stash.getStudioByName(parent_scraped_studio['name'])
+        if parent_stash_studio is not None:
+            stash_studio["parent_id"] = parent_stash_studio["id"]
+        else:
+            stash_studio["parent_id"] = my_stash.addStudio((createStashStudioData(parent_scraped_studio)))
+
     if config.compact_studio_names:
         stash_studio["name"] = tpbd_studio["name"].replace(' ', '')
     else:
