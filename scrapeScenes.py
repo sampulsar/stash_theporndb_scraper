@@ -113,6 +113,10 @@ def createStashPerformerData(tpbd_performer):  #Creates stash-compliant data fro
             stash_performer["gender"] = 'TRANSGENDER_FEMALE'
         if tpbd_performer["parent"]["extras"]["gender"] == "Intersex":
             stash_performer["gender"] = 'INTERSEX'
+    if keyIsSet(tpbd_performer, ["parent", "extras", "nationality"]):
+        stash_performer["country"] = tpbd_performer["parent"]["extras"]["nationality"]
+    if keyIsSet(tpbd_performer, ["parent", "image"]):
+        stash_performer["image"] = tpbd_performer["parent"]["image"]
     return stash_performer
 
 
@@ -544,7 +548,13 @@ def addPerformer(scraped_performer):  #Adds performer using TPDB data, returns I
                 freeones_data['aliases'] = list(set(freeones_data['aliases'] + scraped_performer["parent"]['aliases']))
             stash_performer_data.update(freeones_data)
 
-    stash_performer_data["image"] = getPerformerImageB64(scraped_performer['parent']['name'])
+    image = getPerformerImageB64(scraped_performer['parent']['name'])
+    if (image is not None):
+        stash_performer_data["image"] = image
+    else:
+        image = getPerformerImageB64(freeones_data['name'])
+        if (image is not None):
+            stash_performer_data["image"] = image
     return my_stash.addPerformer(stash_performer_data)
 
 

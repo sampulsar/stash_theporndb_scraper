@@ -562,7 +562,7 @@ class stash_interface:
         query = """   
         {
         scrapePerformerList(scraper_id:"builtin_freeones", query:\""""+name+"""\")
-        { name url twitter instagram birthdate ethnicity country eye_color height measurements fake_tits career_length tattoos piercings aliases }
+        { name url twitter instagram birthdate ethnicity country eye_color hair_color weight height measurements fake_tits career_length tattoos piercings aliases details }
         }"""
         result = self.callGraphQL(query)
         try:
@@ -570,7 +570,7 @@ class stash_interface:
                 query = """   
                 query ScrapePerformer($scraped_performer: ScrapedPerformerInput!){
                     scrapePerformer(scraper_id:"builtin_freeones", scraped_performer: $scraped_performer)
-                    { url twitter instagram birthdate ethnicity country eye_color height measurements fake_tits career_length tattoos piercings aliases }
+                    { url twitter instagram birthdate ethnicity country eye_color hair_color weight height measurements fake_tits career_length tattoos piercings aliases details }
                 }"""
                 variables = {'scraped_performer': result['data']['scrapePerformerList'][0]}
                 result = self.callGraphQL(query, variables)
