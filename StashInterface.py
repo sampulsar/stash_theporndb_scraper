@@ -612,7 +612,7 @@ class stash_interface:
         for studio in self.studios:
             if studio['name'].lower().strip() == name.lower().strip():
                 return studio
-            if studio['name'].replace(' ', '').replace('-', '').replace('\'', '').lower().strip() == name.replace(' ', '').replace('-', '').replace('\'', '').lower().strip():
+            if studio['name'].replace(' ', '').replace('-', '').replace(',', '').replace('\'', '').lower().strip() == name.replace(' ', '').replace('-', '').replace(',', '').replace('\'', '').lower().strip():
                 return studio
         return None
     
