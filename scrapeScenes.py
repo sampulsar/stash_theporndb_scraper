@@ -165,10 +165,9 @@ def getJpegImage(image_url):
 
 def getBabepediaImage(name):
     url = "https://www.babepedia.com/pics/" + urllib.parse.quote(name) + ".jpg"
-    r = requests.get(url, proxies=config.proxies):
+    r = requests.get(url, proxies=config.proxies)
     if r.status_code >= 400:
-        logging.error('ThePornDB HTTP Error: %s' % r.status_code)
-        return None
+        return getTpbdImage(name)
     else:
         return getJpegImage(url)
     return None
