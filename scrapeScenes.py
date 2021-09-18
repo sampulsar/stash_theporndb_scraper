@@ -117,29 +117,52 @@ def createStashPerformerData(tpbd_performer):  #Creates stash-compliant data fro
 
 
 def createStashStudioData(tpbd_studio):  # Creates stash-compliant data from raw data provided by TPBD
-    global tpdb_headers
     stash_studio = {}
+    tpbd_parent_id = None
+    if tpbd_studio["parent_id"] is not None and tpbd_studio["id"] != tpbd_studio["parent_id"]:
+        tpbd_parent_id = tpbd_studio["parent_id"]
+        scraped_studio = getStudio(tpbd_parent_id)
+        stash_studio["parent_id"] = my_stash.addStudio((createStashStudioData(scraped_studio)))
+    elif tpbd_studio["network_id"] is not None and tpbd_studio["id"] != tpbd_studio["network_id"]:
+        tpbd_parent_id = tpbd_studio["network_id"]
+        print(tpbd_parent_id)
+        scraped_studio = getStudio(tpbd_parent_id)
+        print(scraped_studio)
+        scraped_studio["name"] = scraped_studio["name"] + " (Network)"
+        stash_studio["parent_id"] = my_stash.addStudio((createStashStudioData(scraped_studio)))
+    
     if config.compact_studio_names:
         stash_studio["name"] = tpbd_studio["name"].replace(' ', '')
     else:
         stash_studio["name"] = tpbd_studio["name"]
     stash_studio["url"] = tpbd_studio["url"]
     if tpbd_studio["logo"] is not None and "default" not in tpbd_studio["logo"]:
-        time.sleep(tpdb_sleep)
-        try:
-            r = requests.get(tpbd_studio["logo"], proxies=config.proxies, headers=tpdb_headers, timeout=(3, 5))
-            if r.status_code >= 400:
-                logging.error('ThePornDB HTTP Error: %s' % r.status_code)
-                return stash_studio
-            image = r.content
-            image_b64 = base64.b64encode(image)
-            stash_studio["image"] = stash_b64_header + image_b64.decode(ENCODING)
-        except requests.exceptions.RequestException as e:
-            logging.error('Error Getting Studio Image %s' % e)
-            return stash_studio
+        stash_studio["image"] = tpbd_studio["logo"]
+    
+    #short_name into aliases
+    
     return stash_studio
-
-
+    
+    
+def getStudio(studio_id):
+    global tpdb_headers
+    global tpbd_error_count
+    data_url_prefix = "https://api.metadataapi.net/api/sites/"
+    try:
+        time.sleep(tpdb_sleep)  # sleep before every request to avoid being blocked
+        result = requests.get(data_url_prefix + str(studio_id), proxies=config.proxies, timeout=(3, 5), headers=tpdb_headers)
+        tpbd_error_count = 0
+        if result.status_code >= 400:
+            logging.error('ThePornDB HTTP Error: %s' % result.status_code)
+            return None
+        return result.json()["data"]
+    except ValueError:
+        logging.error("Error communicating with ThePornDB")
+        tpbd_error_count = tpbd_error_count + 1
+        if tpbd_error_count > 3:
+            logging.error("ThePornDB seems to be down.  Exiting.")
+            sys.exit()
+            
 def getJpegImage(image_url):
     try:
 
@@ -1117,7 +1140,7 @@ def main(args):
                 else:
                     logging.error("Did not find tag in Stash: " + tag_name, exc_info=config.debug_mode)
             
-            findScenes_params_incl['scene_filter']['tags'] = { 'modifier': 'INCLUDES','value': [*required_tag_ids], 'depth': 1 }
+            findScenes_params_incl['scene_filter']['tags'] = { 'modifier': 'INCLUDES','value': [*required_tag_ids] }
             if (not config.scrape_stash_id): # include only scenes without stash_id
                 findScenes_params_incl['scene_filter']['stash_id'] = { 'modifier': 'IS_NULL', 'value': 'none' }
             if (not config.scrape_organized): # include only scenes that are not organized
@@ -1139,7 +1162,7 @@ def main(args):
                 else:
                     logging.error("Did not find tag in Stash: " + tag_name, exc_info=config.debug_mode)
             
-            findScenes_params_excl['scene_filter']['tags'] = { 'modifier': 'EXCLUDES', 'value': [*excluded_tag_ids], 'depth': 1 }
+            findScenes_params_excl['scene_filter']['tags'] = { 'modifier': 'EXCLUDES', 'value': [*excluded_tag_ids] }
             if (not config.scrape_stash_id): # include only scenes without stash_id
                 findScenes_params_excl['scene_filter']['stash_id'] = { 'modifier': 'IS_NULL', 'value': 'none' }
             if (not config.scrape_organized): # include only scenes that are not organized
