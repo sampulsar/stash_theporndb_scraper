@@ -115,7 +115,7 @@ def createStashPerformerData(tpbd_performer):  #Creates stash-compliant data fro
             stash_performer["gender"] = 'INTERSEX'
     if keyIsSet(tpbd_performer, ["parent", "extras", "nationality"]):
         stash_performer["country"] = tpbd_performer["parent"]["extras"]["nationality"]
-    if keyIsSet(tpbd_performer, ["parent", "image"] and not 'female.png' in tpbd_performer["parent"]["image"]):
+    if keyIsSet(tpbd_performer, ["parent", "image"]) and not 'female.png' in tpbd_performer["parent"]["image"]:
         stash_performer["image"] = tpbd_performer["parent"]["image"]
     
     return stash_performer
