@@ -130,7 +130,7 @@ def createStashStudioData(tpbd_studio):  # Creates stash-compliant data from raw
     elif tpbd_studio["network_id"] is not None and tpbd_studio["id"] != tpbd_studio["network_id"]:
         tpbd_parent_id = tpbd_studio["network_id"]
         parent_scraped_studio = getStudio(tpbd_parent_id)
-        parent_scraped_studio["name"] = parent_scraped_studio["name"] + " (Network)"
+        parent_scraped_studio["name"] = parent_scraped_studio["name"] + config.studio_network_suffix
     
     if parent_scraped_studio is not None:
         parent_stash_studio = my_stash.getStudioByName(parent_scraped_studio['name'])
@@ -463,7 +463,7 @@ def scrapeScene(scene):
             scene_iter = iter(scraped_data)
             next(scene_iter)
             for scraped_scene in scene_iter:
-                if scraped_scene['title'] == scraped_data[0]['title']:
+                if scraped_scene['title'].lower().replace("'","").replace(",","").replace(".","") == scraped_data[0]['title'].lower().replace("'","").replace(",","").replace(".",""):
                     scraped_data.remove(scraped_scene)
 
         print("Grabbing Data For: " + scrape_query)
@@ -624,15 +624,20 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
 
                 performer_id = None
                 performer_name = scraped_performer['name']
+                if (not ' ' in performer_name and config.suffix_singlename_performers):
+                    performer_name = performer_name + ' (' + scraped_scene['site']['name'] + ')'
+                    if keyIsSet(scraped_performer, "aliases"):
+                        scraped_performer["aliases"] = scraped_performer["aliases"] + ", " + performer_name
+                    else:
+                        scraped_performer["aliases"] = performer_name
+
                 if (not keyIsSet(scraped_performer, ['parent', 'name']) and config.add_ambiguous_performers):
                     scraped_performer['parent'] = {}
                     scraped_performer['parent']['name'] = scraped_performer['name']
                     scraped_performer['parent']['extra'] = scraped_performer['extra']
 
                     if (not ' ' in performer_name and config.suffix_singlename_performers):
-                        performer_name = performer_name + ' (' + scraped_scene['site']['name'] + ')'
                         scraped_performer['name'] = performer_name
-
                 stash_performer = my_stash.getPerformerByName(performer_name)
                 add_this_performer = False
                 if stash_performer:
@@ -774,6 +779,7 @@ class config_class:
     username = ""
     password = ""
     ignore_ssl_warnings = True  # Set to True if your Stash uses SSL w/ a self-signed cert
+    traxxx_server_URL = "https://traxxx.me"
 
     scrape_tag = "Scraped From ThePornDB"  #Tag to be added to scraped scenes.  Set to None to disable
     unmatched_tag = "Missing From ThePornDB"  #Tag to be added to scenes that aren't matched at TPDB.  Set to None to disable.
@@ -826,6 +832,7 @@ class config_class:
     clean_filename = True  #If True, will try to clean up filenames before attempting scrape. Often unnecessary, as ThePornDB already does this
     compact_studio_names = True  # If True, this will remove spaces from studio names added from ThePornDB
     suffix_singlename_performers = False # If True, this will add the studio name to performers with just a single name
+    studio_network_suffix = " (Network)"
     proxies = {}  # Leave empty or specify proxy like this: {'http':'http://user:pass@10.10.10.10:8000','https':'https://user:pass@10.10.10.10:8000'}
 
     #use_oshash = False # Set to True to use oshash values to query NOT YET SUPPORTED
