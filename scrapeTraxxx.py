@@ -256,9 +256,9 @@ def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from r
     stash_studio = {}
     temp_studio = getChannelByName(traxxx_studio['name'])
     if temp_studio is not None:
-        traxxx_studio = temp_studio
+        traxxx_studio = temp_studio        
     parent_scraped_studio = None
-    if traxxx_studio["parent"] is not None:
+    if keyIsSet(traxxx_studio, ['parent']) and traxxx_studio["parent"] is not None:
         parent_scraped_studio = traxxx_studio["parent"]
     
     if parent_scraped_studio is not None:
@@ -277,19 +277,20 @@ def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from r
     else:
         stash_studio["name"] = traxxx_studio["name"]
     
-    if traxxx_studio["description"] is not None:
+    if keyIsSet(traxxx_studio, ['description']) and traxxx_studio["description"] is not None:
         stash_studio["details"] = traxxx_studio["description"]   
 
-    stash_studio["url"] = traxxx_studio["url"]
+    if keyIsSet(traxxx_studio, ['"url"']):
+        stash_studio["url"] = traxxx_studio["url"]
     
-    if traxxx_studio["parent"] is not None:
+    if keyIsSet(traxxx_studio, ['parent']) and traxxx_studio["parent"] is not None:
         parentName = traxxx_studio["parent"]["name"]
         if traxxx_studio["parent"]['type'] == "network" and config.studio_network_suffix:
             parentName = parentName + config.studio_network_suffix 
         parent = my_stash.getStudioByName(parentName)
         if parent is not None:
             stash_studio["parent_id"] = parent["id"]
-    if "logo" in traxxx_studio and traxxx_studio["logo"] is not None:
+    if keyIsSet(traxxx_studio, ['"logo"']) and traxxx_studio["logo"] is not None:
         stash_studio["image"] = config.traxxx_server_URL + "/img/logos/" + traxxx_studio["logo"]
     
     #short_name into aliases
@@ -539,14 +540,18 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
             matched_scene = first_item
             matched_item_name = first_item_name
 
-        #if match_studio == True and scene['date'] is None:
-        #    print(first_item_name)
+        if match_studio == True and scene['date'] is None:
+            print(first_item_name)
 
-        #if match_studio == True and match_ratio > 0.9:
-        #    first_item['date'] = scene['date']
-        #    matched_scene = first_item
-        #    matched_item_name = first_item_name
-
+        if match_studio == True and match_ratio > 0.9:
+            first_item['date'] = scene['date']
+            matched_scene = first_item
+            matched_item_name = first_item_name
+        elif len(scraped_data) == 1:
+            new_item = copy.deepcopy(first_item)
+            new_item['date'] = scene['date']
+            scraped_data.append(new_item)
+        
         if close_studio == True and match_date == True and match_ratio > 0.99:
             matched_scene = first_item
             matched_item_name = first_item_name
@@ -554,7 +559,7 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
         # print(first_item_name)
         
     if matched_scene is None:
-        if len(scraped_data) == 1:
+        if len(scraped_data) == 1 and not config.manual_disambiguate:
             return []
         else:
             return scraped_data
@@ -572,7 +577,21 @@ def manuallyDisambiguateResults(scraped_data):
             print(scene['entity']['name'], end=" ")
         if keyIsSet(scene, ['date']) and scene['date']: print(scene['date'].split('T')[0], end=" ")
         if keyIsSet(scene, ['title']): print(scene['title'], end=" ")
-        if keyIsSet(scene, ['shootId']): print('(' + scene['shootId'] + ')', end=" ")
+        if keyIsSet(scene, ['shootId']): print('[' + scene['shootId'] + ']', end=" ")
+        if keyIsSet(scene, ['actors']):
+            performer_names = []
+            for scraped_performer in scene["actors"]:
+                not_female = False
+                 
+                if keyIsSet(scraped_performer, ["gender"]) and scraped_performer["gender"] != 'female':
+                    not_female = True
+
+                if (not_female):
+                    continue  # End current loop on male performers not in path
+
+                performer_names.append(scraped_performer['name'])
+            print('(' + ", ".join(performer_names) + ')', end=" ")
+        
         print('')
     print("0: None of the above.  Skip this scene.")
 
@@ -711,16 +730,15 @@ def scrapeScene(scene):
 
         scraped_data = cleanResults(scene, scraped_data)
         
-        if len(scraped_data) > 0 and config.manual_disambiguate:  # Manual disambiguate
-            scraped_data = manuallyDisambiguateResults(scraped_data)
-
-        if len(scraped_data) > 0 and config.auto_disambiguate:  #Auto disambiguate
-            # print("Auto disambiguating...")
+        if len(scraped_data) > 0:  #Auto disambiguate
             scraped_data = autoDisambiguateResults(scene, scrape_query, scraped_data)
+            #print("Auto disambiguated")
+            
+        if len(scraped_data) > 1 and config.manual_disambiguate:  # Manual disambiguate
+            scraped_data = manuallyDisambiguateResults(scraped_data)
             
         if len(scraped_data) > 1:  # Handling of ambiguous scenes
             print("Ambiguous data found for: [{}], skipping".format(scrape_query))
-            
             if config.ambiguous_tag:
                 scene_data["tag_ids"].append(my_stash.getTagByName(config.ambiguous_tag)['id'])
             my_stash.updateSceneData(scene_data)
