@@ -63,11 +63,13 @@ def stripString(string):
         
     string = string.lower()
     string = cleanString(string)
-    string = string.replace(' ', '')
+    string = string.replace(',', '')
+    string = string.replace('.', '')
     string = string.replace(" & ", ' ')
     string = string.replace(" and ", ' ')
     string = string.replace("nude girls ", ' ')
     string = string.replace("girl girl ", ' ')
+    string = string.replace(' ', '')
     
     return string
 
@@ -132,7 +134,8 @@ def scrubScene(scene, dirs, file_name):
         if dirs:
             scene['studio'] = {}
             scene['studio']['name'] = findChannel(dirs[-3])
-
+            if scene['studio']['name'].lower() == "sis":
+                scene['studio']['name'] = "SisPorn"
     return scene        
 
 
@@ -254,9 +257,11 @@ def createStashPerformerData(traxxx_performer):  #Creates stash-compliant data f
 
 def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from raw data provided by traxxx
     stash_studio = {}
+    print(traxxx_studio)
     temp_studio = getChannelByName(traxxx_studio['name'])
     if temp_studio is not None:
-        traxxx_studio = temp_studio        
+        traxxx_studio = temp_studio
+        
     parent_scraped_studio = None
     if keyIsSet(traxxx_studio, ['parent']) and traxxx_studio["parent"] is not None:
         parent_scraped_studio = traxxx_studio["parent"]
@@ -432,7 +437,10 @@ def cleanResults(scene, scraped_data):
             elif stripString(scene_studio) == "legalporno" or stripString(scene_studio) == "analvids" or stripString(scene_studio) == "ddfbusty" or stripString(scene_studio) == "handsonhardcore" or stripString(scene_studio) == "pornworld" or stripString(scene_studio) == "eurogirlsongirls" or stripString(scene_studio) == "houseoftaboo":
                 if stripString(first_item_studio) == "legalporno" or stripString(first_item_studio) == "analvids" or stripString(first_item_studio) == "ddfbusty" or stripString(first_item_studio) == "handsonhardcore" or stripString(first_item_studio) == "pornworld" or stripString(first_item_studio) == "eurogirlsongirls" or stripString(first_item_studio) == "houseoftaboo":
                     clean_data.append(first_item)
-            
+                
+            #else:
+            #    print(stripString(first_item_studio) + ' == ' + stripString(scene_studio))
+
     return clean_data
 
 def autoDisambiguateResults(scene, scrape_query, scraped_data):
@@ -457,6 +465,17 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
                 close_studio = True
             
             first_item_name =  first_item_name + " " + first_item['entity']['name']
+
+        if match_studio == False:
+            if keyIsSet(scene, ["studio", "name"]) and keyIsSet(first_item, ['entity', 'parent', 'name']):
+                studio_name = scene['studio']['name']
+                match_studio = (stripString(first_item['entity']['parent']['name']) == stripString(scene['studio']['name']))
+            
+                if (stripString(first_item['entity']['parent']['name']) != stripString(scene['studio']['name'])):
+                    close_studio = True
+            
+                first_item_name =  first_item_name + " " + first_item['entity']['parent']['name']
+
 
         if scene['date'] and first_item['date']:
             match_date = (first_item['date'].split('T')[0] == scene['date'])
@@ -547,7 +566,7 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
             first_item['date'] = scene['date']
             matched_scene = first_item
             matched_item_name = first_item_name
-        elif len(scraped_data) == 1:
+        elif match_studio == True and len(scraped_data) == 1:
             new_item = copy.deepcopy(first_item)
             new_item['date'] = scene['date']
             scraped_data.append(new_item)
@@ -555,6 +574,11 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
         if close_studio == True and match_date == True and match_ratio > 0.99:
             matched_scene = first_item
             matched_item_name = first_item_name
+        elif close_studio == True and len(scraped_data) == 1:
+            print ("close_studio " + str(match_ratio))
+            new_item = copy.deepcopy(first_item)
+            new_item['date'] = scene['date']
+            scraped_data.append(new_item)
 
         # print(first_item_name)
         
@@ -605,7 +629,7 @@ def manuallyDisambiguateResults(scraped_data):
             print("Invalid Selection")
 
     if selection == 0:
-        return scraped_data
+        return []
     else:
         new_data = []
         new_data.append(scraped_data[selection - 1])
@@ -672,7 +696,7 @@ def getQuery(scene):
     except Exception:
         logging.error("Error when parsing scene path: " + scene['path'], exc_info=config.debug_mode)
 
-    if config.parse_with_filename:
+    if not config.parse_with_filename:
         if file_name is None:
             return
         if config.clean_filename:
@@ -734,7 +758,7 @@ def scrapeScene(scene):
             scraped_data = autoDisambiguateResults(scene, scrape_query, scraped_data)
             #print("Auto disambiguated")
             
-        if len(scraped_data) > 1 and config.manual_disambiguate:  # Manual disambiguate
+        if len(scraped_data) > 0 and config.manual_disambiguate:  # Manual disambiguate
             scraped_data = manuallyDisambiguateResults(scraped_data)
             
         if len(scraped_data) > 1:  # Handling of ambiguous scenes
@@ -914,7 +938,8 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
                     title_prefix = performer_names[0] + " "
                 for name in performer_names:
                     scraped_scene["title"] = lreplace(name, '', scraped_scene["title"]).strip()
-            scene_data["title"] = str(title_prefix + scraped_scene["title"]).strip()
+            if keyIsSet(scraped_scene, "title"):
+                scene_data["title"] = str(title_prefix + scraped_scene["title"]).strip()
 
         # Set tag_ids for tags_to_add
         for tag_dict in tags_to_add:
@@ -1331,6 +1356,7 @@ def main(args):
                     logging.error("Did not find tag in Stash: " + tag_name, exc_info=config.debug_mode)
             
             findScenes_params_incl['scene_filter']['tags'] = { 'modifier': 'INCLUDES','value': [*required_tag_ids] }
+            findScenes_params_incl['scene_filter']['path'] = {'modifier': 'EXCLUDES', 'value':'AdultTime'}
             if (not config.scrape_stash_id): # include only scenes without stash_id
                 findScenes_params_incl['scene_filter']['stash_id'] = { 'modifier': 'IS_NULL', 'value': 'none' }
             if (not config.scrape_organized): # include only scenes that are not organized
@@ -1353,6 +1379,7 @@ def main(args):
                     logging.error("Did not find tag in Stash: " + tag_name, exc_info=config.debug_mode)
             
             findScenes_params_excl['scene_filter']['tags'] = { 'modifier': 'EXCLUDES', 'value': [*excluded_tag_ids] }
+            findScenes_params_excl['scene_filter']['path'] = {'modifier': 'EXCLUDES', 'value':'AdultTime'}
             if (not config.scrape_stash_id): # include only scenes without stash_id
                 findScenes_params_excl['scene_filter']['stash_id'] = { 'modifier': 'IS_NULL', 'value': 'none' }
             if (not config.scrape_organized): # include only scenes that are not organized

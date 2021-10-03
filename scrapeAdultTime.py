@@ -19,6 +19,7 @@ from io import BytesIO
 from urllib.parse import quote
 from PIL import Image
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from urllib.parse import urlparse
 from pathlib import Path
 
 import StashInterface
@@ -254,35 +255,6 @@ def getPerformerImageB64(name):  #Searches Babepedia and TPBD for a performer im
         return None
     except Exception as e:
         logging.error("Error Getting Performer Image", exc_info=config.debug_mode)
-
-def sceneQuery(query):  # Scrapes Traxxx based on query.  Returns an array of scenes as results, or None
-    global AdultTime_headers
-    global AdultTime_error_count
-    url = config.AdultTime_server_URL + "/api/scenes?limit=3&q=" + urllib.parse.quote(query.replace(" ", "."))
-    result = None
-    try:
-        time.sleep(AdultTime_sleep)  # sleep before every request to avoid being blocked
-        result = requests.get(url, proxies=config.proxies, timeout=(3, 15), headers=AdultTime_headers)
-        AdultTime_error_count = 0
-        if result.status_code >= 400:
-            logging.error('Traxxx HTTP Error: %s' % result.status_code)
-            return None
-        return result.json()["scenes"]
-    except ValueError:
-        logging.error("Error communicating with Traxxx")
-        AdultTime_error_count = AdultTime_error_count + 1
-        if AdultTime_error_count > 3:
-            logging.error("Traxxx seems to be down.  Exiting.")
-            sys.exit()
-    except Exception:
-        logging.error("Error communicating with Traxxx", exc_info=config.debug_mode)
-        if result is None:
-            print(url)
-            print("No Result")
-        else:
-            print(result)
-
-    return None
 
 def autoDisambiguateResults(scene, scrape_query, performers, clip_path, scraped_data):
     new_data = []
@@ -646,9 +618,15 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
         # Add Studio to the scene
         if config.set_studio and keyIsSet(scraped_scene, "studio"):
             studio_id = None
+            scraped_studio = scraped_scene['studio']
             temp_studio = getChannel(scraped_scene['studio']['sitename'])
             if temp_studio is not None:
                 scraped_studio = temp_studio
+            else:
+                temp_studio = getChannel(scraped_scene['studio']['name'])
+                if temp_studio is not None:
+                    scraped_studio = temp_studio
+            
             if config.compact_studio_names:
                 scraped_studio['name'] = scraped_studio['name'].replace(' ', '')
             stash_studio = my_stash.getStudioByName(scraped_studio['name'])
@@ -996,7 +974,7 @@ def scraping_json(api_json, url):
         try:
             scrape['image'] = 'https://images03-fame.gammacdn.com/movies' + next(iter(api_json['pictures']['sfw']['top'].values()))
         except:
-            debug("[ERROR] Can't manage to get the image for some reason.")
+            logging.debug("[ERROR] Can't manage to get the image for some reason.")
     # URL
     if url:
         scrape['url'] = url
