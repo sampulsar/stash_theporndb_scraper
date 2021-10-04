@@ -1115,6 +1115,11 @@ def parseArgs(args):
         required_tags.append(tag)
     for tag in parsed_args.not_tags:
         excluded_tags.append(tag)
+    if parsed_args.fail_no_date:
+        config.fail_no_date = True
+    if parsed_args.remove_search_tag:
+        config.remove_search_tag = True
+
     return parsed_args.query
 
 
