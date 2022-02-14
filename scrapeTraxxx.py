@@ -271,7 +271,7 @@ def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from r
         parent_scraped_studio = traxxx_studio["parent"]
     
     if parent_scraped_studio is not None:
-        if parent_scraped_studio['type'] == "network" and config.studio_network_suffix:
+        if parent_scraped_studio['type'] == "network" and config.studio_network_suffix and config.studio_network_suffix not in parent_scraped_studio["name"]:
             parent_scraped_studio["name"] = parent_scraped_studio["name"] + config.studio_network_suffix
 
         parent_stash_studio = my_stash.getStudioByName(parent_scraped_studio['name'])
