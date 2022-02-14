@@ -397,9 +397,9 @@ def getPerformerImageB64(name):  #Searches Babepedia and TPBD for a performer im
 def sceneQuery(query):  # Scrapes Traxxx based on query.  Returns an array of scenes as results, or None
     global traxxx_headers
     global traxxx_error_count
-    url = config.traxxx_server_URL + "/api/scenes?limit=3&q=" + urllib.parse.quote(query.replace(" ", "."))
     if custom_sceneQuery is not None:
         query = custom_sceneQuery(query)
+    url = config.traxxx_server_URL + "/api/scenes?limit=3&q=" + urllib.parse.quote(query.replace(" ", "."))
     result = None
     try:
         time.sleep(traxxx_sleep)  # sleep before every request to avoid being blocked
