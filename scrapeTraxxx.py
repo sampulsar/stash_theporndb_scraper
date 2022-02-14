@@ -746,6 +746,7 @@ def scrapeScene(scene):
                 stash_studio = my_stash.getStudioByName(scene['studio']['name'])
                 if stash_studio:
                     scene_data["studio_id"] = stash_studio["id"]
+                    my_stash.updateStudio((createStashStudioData(scene['studio'])))
                 elif config.add_studio:
                     # Add the Studio to Stash
                     print("Did not find " + scene['studio']['name'] + " in Stash.  Adding Studio.")
@@ -1367,7 +1368,6 @@ def main(args):
                     logging.error("Did not find tag in Stash: " + tag_name, exc_info=config.debug_mode)
             
             findScenes_params_incl['scene_filter']['tags'] = { 'modifier': 'INCLUDES','value': [*required_tag_ids] }
-            # findScenes_params_incl['scene_filter']['path'] = {'modifier': 'EXCLUDES', 'value':'AdultTime'}
             if (not config.scrape_stash_id): # include only scenes without stash_id
                 findScenes_params_incl['scene_filter']['stash_id'] = { 'modifier': 'IS_NULL', 'value': 'none' }
             if (not config.scrape_organized): # include only scenes that are not organized
@@ -1390,7 +1390,6 @@ def main(args):
                     logging.error("Did not find tag in Stash: " + tag_name, exc_info=config.debug_mode)
             
             findScenes_params_excl['scene_filter']['tags'] = { 'modifier': 'EXCLUDES', 'value': [*excluded_tag_ids] }
-            findScenes_params_excl['scene_filter']['path'] = {'modifier': 'EXCLUDES', 'value':'AdultTime'}
             if (not config.scrape_stash_id): # include only scenes without stash_id
                 findScenes_params_excl['scene_filter']['stash_id'] = { 'modifier': 'IS_NULL', 'value': 'none' }
             if (not config.scrape_organized): # include only scenes that are not organized

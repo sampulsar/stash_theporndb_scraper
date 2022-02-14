@@ -456,6 +456,22 @@ class stash_interface:
             logging.error("Error in adding studio:", exc_info=self.debug_mode)
             logging.error(variables)
 
+    def updateStudio(self, studio_data):
+        query = """
+        mutation studioUpdate($input:StudioUpdateInput!) {
+          studioUpdate(input: $input){
+            id
+          }
+        }
+        """
+
+        variables = {'input': studio_data}
+        try:
+            result = self.callGraphQL(query, variables)
+        except:
+            logging.error("Error in updating studio:", exc_info=self.debug_mode)
+            logging.error(variables)
+
     def addTag(self, tag_data):
         query = """
         mutation tagCreate($input:TagCreateInput!) {
