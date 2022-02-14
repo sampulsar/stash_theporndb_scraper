@@ -275,10 +275,13 @@ def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from r
             parent_scraped_studio["name"] = parent_scraped_studio["name"] + config.studio_network_suffix
 
         parent_stash_studio = my_stash.getStudioByName(parent_scraped_studio['name'])
+        parent_studio = (createStashStudioData(parent_scraped_studio))
         if parent_stash_studio is not None:
             stash_studio["parent_id"] = parent_stash_studio["id"]
+            parent_studio["id"] = parent_stash_studio["id"]
+            my_stash.addStudio(parent_studio)
         else:
-            stash_studio["parent_id"] = my_stash.addStudio((createStashStudioData(parent_scraped_studio)))
+            stash_studio["parent_id"] = my_stash.addStudio(parent_studio)
 
 
     if config.compact_studio_names:
