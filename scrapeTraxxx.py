@@ -26,6 +26,9 @@ custom_clean_name = None
 if Path(__file__).with_name('custom.py').is_file():
     from custom import clean_name as custom_clean_name
 
+custom_sceneQuery = None
+if Path(__file__).with_name('custom_sceneQuery.py').is_file():
+    from custom_sceneQuery import sceneQuery as custom_sceneQuery
 
 ###########################################################
 #CONFIGURATION OPTIONS HAVE BEEN MOVED TO CONFIGURATION.PY#
@@ -395,6 +398,8 @@ def sceneQuery(query):  # Scrapes Traxxx based on query.  Returns an array of sc
     global traxxx_headers
     global traxxx_error_count
     url = config.traxxx_server_URL + "/api/scenes?limit=3&q=" + urllib.parse.quote(query.replace(" ", "."))
+    if custom_sceneQuery is not None:
+        query = custom_sceneQuery(query)
     result = None
     try:
         time.sleep(traxxx_sleep)  # sleep before every request to avoid being blocked
