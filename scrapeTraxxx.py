@@ -261,6 +261,8 @@ def createStashPerformerData(traxxx_performer):  #Creates stash-compliant data f
 
 def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from raw data provided by traxxx
     stash_studio = {}
+    if keyIsSet(traxxx_studio, ['id']) and traxxx_studio["id"] is not None:
+        stash_studio["id"] = traxxx_studio["id"]
     print(traxxx_studio)
     temp_studio = getChannelByName(traxxx_studio['name'])
     if temp_studio is not None:
@@ -289,7 +291,7 @@ def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from r
     if keyIsSet(traxxx_studio, ['description']) and traxxx_studio["description"] is not None:
         stash_studio["details"] = traxxx_studio["description"]   
 
-    if keyIsSet(traxxx_studio, ['"url"']):
+    if keyIsSet(traxxx_studio, ['url']):
         stash_studio["url"] = traxxx_studio["url"]
     
     if keyIsSet(traxxx_studio, ['parent']) and traxxx_studio["parent"] is not None:
@@ -299,7 +301,7 @@ def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from r
         parent = my_stash.getStudioByName(parentName)
         if parent is not None:
             stash_studio["parent_id"] = parent["id"]
-    if keyIsSet(traxxx_studio, ['"logo"']) and traxxx_studio["logo"] is not None:
+    if keyIsSet(traxxx_studio, ['logo']) and traxxx_studio["logo"] is not None:
         stash_studio["image"] = config.traxxx_server_URL + "/img/logos/" + traxxx_studio["logo"]
     
     #short_name into aliases
@@ -744,13 +746,15 @@ def scrapeScene(scene):
                 scene_data['date'] = scene['date']
             if keyIsSet(scene, ["studio", "name"]):
                 stash_studio = my_stash.getStudioByName(scene['studio']['name'])
+                studio_data = (createStashStudioData(scene['studio']))
                 if stash_studio:
                     scene_data["studio_id"] = stash_studio["id"]
-                    my_stash.updateStudio((createStashStudioData(scene['studio'])))
+                    if keyIsSet(studio_data, ["id"]):
+                        my_stash.updateStudio(studio_data)
                 elif config.add_studio:
                     # Add the Studio to Stash
                     print("Did not find " + scene['studio']['name'] + " in Stash.  Adding Studio.")
-                    scene_data["studio_id"] = my_stash.addStudio((createStashStudioData(scene['studio'])))
+                    scene_data["studio_id"] = my_stash.addStudio(studio_data)
             scene_data['title'] = scene['title']
         if not scraped_data:
             print("No data found for: [{}]".format(scrape_query))
@@ -879,12 +883,15 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
             if config.compact_studio_names:
                 scraped_studio['name'] = scraped_studio['name'].replace(' ', '')
             stash_studio = my_stash.getStudioByName(scraped_studio['name'])
+            studio_data = (createStashStudioData(scraped_studio))
             if stash_studio:
                 studio_id = stash_studio["id"]
+                studio_data["id"] = stash_studio["id"]
+                my_stash.updateStudio(studio_data)
             elif config.add_studio:
                 # Add the Studio to Stash
                 print("Did not find " + scraped_studio['name'] + " in Stash.  Adding Studio.")
-                studio_id = my_stash.addStudio((createStashStudioData(scraped_studio)))
+                studio_id = my_stash.addStudio(studio_data)
             if studio_id != None:  # If we have a valid ID, add studio to Scene
                 scene_data["studio_id"] = studio_id
 
