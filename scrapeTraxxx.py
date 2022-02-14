@@ -261,7 +261,7 @@ def createStashPerformerData(traxxx_performer):  #Creates stash-compliant data f
 
 def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from raw data provided by traxxx
     stash_studio = {}
-    print(traxxx_studio)
+    print(traxxx_studio['name'])
     temp_studio = getChannelByName(traxxx_studio['name'])
     if temp_studio is not None:
         traxxx_studio = temp_studio
@@ -279,7 +279,7 @@ def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from r
         if parent_stash_studio is not None:
             stash_studio["parent_id"] = parent_stash_studio["id"]
             parent_studio["id"] = parent_stash_studio["id"]
-            my_stash.addStudio(parent_studio)
+            my_stash.updateStudio(parent_studio)
         else:
             stash_studio["parent_id"] = my_stash.addStudio(parent_studio)
 
@@ -751,8 +751,7 @@ def scrapeScene(scene):
                 if stash_studio:
                     scene_data["studio_id"] = stash_studio["id"]
                     studio_data["id"] = stash_studio["id"]
-                    print(studio_data)
-                    #my_stash.updateStudio(studio_data)
+                    my_stash.updateStudio(studio_data)
                 elif config.add_studio:
                     # Add the Studio to Stash
                     print("Did not find " + scene['studio']['name'] + " in Stash.  Adding Studio.")
@@ -889,8 +888,7 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
             if stash_studio:
                 studio_id = stash_studio["id"]
                 studio_data["id"] = stash_studio["id"]
-                print(studio_data)
-                #my_stash.updateStudio(studio_data)
+                my_stash.updateStudio(studio_data)
             elif config.add_studio:
                 # Add the Studio to Stash
                 print("Did not find " + scraped_studio['name'] + " in Stash.  Adding Studio.")
