@@ -748,7 +748,8 @@ def scrapeScene(scene):
                 if stash_studio:
                     scene_data["studio_id"] = stash_studio["id"]
                     studio_data["id"] = stash_studio["id"]
-                    my_stash.updateStudio(studio_data)
+                    print(studio_data)
+                    #my_stash.updateStudio(studio_data)
                 elif config.add_studio:
                     # Add the Studio to Stash
                     print("Did not find " + scene['studio']['name'] + " in Stash.  Adding Studio.")
@@ -885,7 +886,8 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
             if stash_studio:
                 studio_id = stash_studio["id"]
                 studio_data["id"] = stash_studio["id"]
-                my_stash.updateStudio(studio_data)
+                print(studio_data)
+                #my_stash.updateStudio(studio_data)
             elif config.add_studio:
                 # Add the Studio to Stash
                 print("Did not find " + scraped_studio['name'] + " in Stash.  Adding Studio.")
