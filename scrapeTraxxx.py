@@ -261,8 +261,6 @@ def createStashPerformerData(traxxx_performer):  #Creates stash-compliant data f
 
 def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from raw data provided by traxxx
     stash_studio = {}
-    if keyIsSet(traxxx_studio, ['id']) and traxxx_studio["id"] is not None:
-        stash_studio["id"] = traxxx_studio["id"]
     print(traxxx_studio)
     temp_studio = getChannelByName(traxxx_studio['name'])
     if temp_studio is not None:
@@ -749,8 +747,8 @@ def scrapeScene(scene):
                 studio_data = (createStashStudioData(scene['studio']))
                 if stash_studio:
                     scene_data["studio_id"] = stash_studio["id"]
-                    if keyIsSet(studio_data, ["id"]):
-                        my_stash.updateStudio(studio_data)
+                    studio_data["id"] = stash_studio["id"]
+                    my_stash.updateStudio(studio_data)
                 elif config.add_studio:
                     # Add the Studio to Stash
                     print("Did not find " + scene['studio']['name'] + " in Stash.  Adding Studio.")
