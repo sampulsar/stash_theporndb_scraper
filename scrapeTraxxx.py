@@ -89,15 +89,16 @@ def scrubFileName(file_name):
 
 def scrubScene(scene, dirs, file_name):
     scene_title = file_name
+    original_title = scene['title']
     
     date_search = re.search('.(\d{2}).(\d{2}).(\d{2}).[A-z]', scene_title, re.IGNORECASE)
     if date_search:
         date = "20" + date_search.group(1) + "-" + date_search.group(2) + "-" + date_search.group(3)
-        if scene['date'] is None or scene['date'] == "": 
+        if scene['date'] is None or scene['date'] == "" and file_name == scene['title']: 
             scene['date'] = date
 
         title_search = re.search("(\d{2}).(\d{2}).(\d{2}).(.+?).XXX", scene_title, re.IGNORECASE)
-        if title_search:
+        if title_search and file_name == scene['title']:
             title =  title_search.group(4)
             title_search = re.search("(\d{2}).(.+?)$", title, re.IGNORECASE)
             title_search2 = re.search("(\d{2}).(\d{2}).(\d{2}).(\d{2}).(.+?).XXX", scene_title, re.IGNORECASE)
@@ -110,7 +111,7 @@ def scrubScene(scene, dirs, file_name):
             if title_search:
                 scene['title'] = re.sub('\.', ' ', title_search.group(5))
     else:
-        if scene['date'] is None:
+        if scene['date'] is None and file_name == scene['title']:
             episode2_search = re.search('.E(\d{2}).', scene_title, re.IGNORECASE)
             episode3_search = re.search('.E(\d{3}).', scene_title, re.IGNORECASE)
             
@@ -576,6 +577,7 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
             matched_item_name = first_item_name
         elif close_studio == True and len(scraped_data) == 1:
             print ("close_studio " + str(match_ratio))
+            print(first_item_name);
             new_item = copy.deepcopy(first_item)
             new_item['date'] = scene['date']
             scraped_data.append(new_item)
@@ -758,7 +760,7 @@ def scrapeScene(scene):
             scraped_data = autoDisambiguateResults(scene, scrape_query, scraped_data)
             #print("Auto disambiguated")
             
-        if len(scraped_data) > 0 and config.manual_disambiguate:  # Manual disambiguate
+        if len(scraped_data) > 1 and config.manual_disambiguate:  # Manual disambiguate
             scraped_data = manuallyDisambiguateResults(scraped_data)
             
         if len(scraped_data) > 1:  # Handling of ambiguous scenes
@@ -861,6 +863,9 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
                 stringbase = str(image_b64)
                 scene_data["cover_image"] = stash_b64_header + image_b64.decode(ENCODING)
 
+        if keyIsSet(scraped_scene, "entity"):
+            scraped_studio = scraped_scene['entity']
+        
         # Add Studio to the scene
         if config.set_studio and keyIsSet(scraped_scene, "entity"):
             studio_id = None
@@ -881,7 +886,8 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
         if config.scrape_tag: tags_to_add.append({'tag': config.scrape_tag})
         if config.set_tags and keyIsSet(scraped_scene, "tags"):
             for tag in scraped_scene["tags"]:
-                tags_to_add.append({'tag': tag['name']})
+                if (keyIsSet(tag, "name")):
+                    tags_to_add.append({'tag': tag['name']})
 
         # Add performers to scene
         if config.set_performers and keyIsSet(scraped_scene, "actors"):
@@ -1356,7 +1362,7 @@ def main(args):
                     logging.error("Did not find tag in Stash: " + tag_name, exc_info=config.debug_mode)
             
             findScenes_params_incl['scene_filter']['tags'] = { 'modifier': 'INCLUDES','value': [*required_tag_ids] }
-            findScenes_params_incl['scene_filter']['path'] = {'modifier': 'EXCLUDES', 'value':'AdultTime'}
+            # findScenes_params_incl['scene_filter']['path'] = {'modifier': 'EXCLUDES', 'value':'AdultTime'}
             if (not config.scrape_stash_id): # include only scenes without stash_id
                 findScenes_params_incl['scene_filter']['stash_id'] = { 'modifier': 'IS_NULL', 'value': 'none' }
             if (not config.scrape_organized): # include only scenes that are not organized

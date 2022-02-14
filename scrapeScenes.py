@@ -464,22 +464,17 @@ def scrapeScene(scene):
         if not scraped_data:
             scraped_data = sceneQuery(scrape_query, False)
         if not scraped_data:
+            print("No data found for: [{}]".format(scrape_query))
             if config.fail_no_date:
-                if re.search(r'\d{2}\.\d{2}\.\d{2}', scene['path']) or re.search(r'\d{4}-\d{2}-\d{2}', scene['path']) or re.search(r' d{2} \d{2} \d{2} ', scene['path']):
-                    scene['path'] = re.sub(r'\.\d{2}\.\d{2}\.\d{2}\.',r' ',scene['path'])
-                    scene['path'] = re.sub(r' d{2} \d{2} \d{2} ',r' ',scene['path'])
-                    scene['path'] = re.sub(r'\ \d{4}-\d{2}-\d{2}\ ',r' ',scene['path'])
-                    scene['path'] = scene['path'].replace("  "," ")
+                if re.search(r'\d{2}\.\d{2}\.\d{2}', scrape_query) or re.search(r'\d{4}-\d{2}-\d{2}', scrape_query) or re.search(r' d{2} \d{2} \d{2} ', scrape_query):
+                    scrape_query = re.sub(r'\.\d{2}\.\d{2}\.\d{2}\.',r' ',scrape_query)
+                    scrape_query = re.sub(r' d{2} \d{2} \d{2} ',r' ',scrape_query)
+                    scrape_query = re.sub(r'\ \d{4}-\d{2}-\d{2}\ ',r' ',scrape_query)
+                    scrape_query = scrape_query.replace("  "," ")
                     print("No data found, Retrying without date for: [{}]".format(scrape_query))
-                    scrapeScene(scene)
-                    return None
-                else:
-                    print("No data found for: [{}]".format(scrape_query))
-                    scene_data["tag_ids"].append(my_stash.getTagByName(config.unmatched_tag)['id'])
-                    my_stash.updateSceneData(scene_data)
-                    return None                
-            else:
-                print("No data found for: [{}]".format(scrape_query))
+                    scraped_data = sceneQuery(scrape_query)
+        if not scraped_data:
+                
                 scene_data["tag_ids"].append(my_stash.getTagByName(config.unmatched_tag)['id'])
                 my_stash.updateSceneData(scene_data)
                 return None
@@ -1115,11 +1110,6 @@ def parseArgs(args):
         required_tags.append(tag)
     for tag in parsed_args.not_tags:
         excluded_tags.append(tag)
-    if parsed_args.fail_no_date:
-        config.fail_no_date = True
-    if parsed_args.remove_search_tag:
-        config.remove_search_tag = True
-
     return parsed_args.query
 
 
@@ -1208,7 +1198,7 @@ def main(args):
                     logging.error("Did not find tag in Stash: " + tag_name, exc_info=config.debug_mode)
             
             findScenes_params_incl['scene_filter']['tags'] = { 'modifier': 'INCLUDES','value': [*required_tag_ids] }
-            findScenes_params_incl['scene_filter']['path'] = {'modifier': 'EXCLUDES', 'value':'AdultTime'}
+            # findScenes_params_incl['scene_filter']['path'] = {'modifier': 'EXCLUDES', 'value':'AdultTime'}
             if (not config.scrape_stash_id): # include only scenes without stash_id
                 findScenes_params_incl['scene_filter']['stash_id'] = { 'modifier': 'IS_NULL', 'value': 'none' }
             if (not config.scrape_organized): # include only scenes that are not organized
