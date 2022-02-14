@@ -261,7 +261,7 @@ def createStashPerformerData(traxxx_performer):  #Creates stash-compliant data f
 
 def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from raw data provided by traxxx
     stash_studio = {}
-    print(traxxx_studio['name'])
+    #print(traxxx_studio['name'])
     temp_studio = getChannelByName(traxxx_studio['name'])
     if temp_studio is not None:
         traxxx_studio = temp_studio
