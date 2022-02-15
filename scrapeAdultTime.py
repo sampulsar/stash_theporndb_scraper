@@ -210,7 +210,7 @@ def getChannel(channelName):
 def getPerformer(performer):
     global api_url
     performer_data = api_search_req("actor_id", performer['actor_id'], api_url)
-    if (len(performer_data) == 1):
+    if (performer_data and len(performer_data) == 1):
         performer = performer_data[0]
         # print(performer["attributes"])
         if " " not in performer["name"]:
