@@ -100,8 +100,8 @@ def scrubScene(scene, dirs, file_name):
         if scene['date'] is None or scene['date'] == "" and file_name == scene['title']: 
             scene['date'] = date
 
-        title_search = re.search("(\d{2}).(\d{2}).(\d{2}).(.+?).XXX", scene_title, re.IGNORECASE)
-        if title_search and file_name == scene['title']:
+        title_search = re.search("\.(\d{2}).(\d{2}).(\d{2}).(.+?).XXX", scene_title, re.IGNORECASE)
+        if title_search and (file_name == scene['title'] or scene['title'][0].isdigit()):
             title =  title_search.group(4)
             title_search = re.search("(\d{2}).(.+?)$", title, re.IGNORECASE)
             title_search2 = re.search("(\d{2}).(\d{2}).(\d{2}).(\d{2}).(.+?).XXX", scene_title, re.IGNORECASE)
