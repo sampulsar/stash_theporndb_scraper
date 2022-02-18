@@ -1348,6 +1348,7 @@ def main(args):
         findScenes_params = {}
         findScenes_params['filter'] = {'q': query, 'sort': "created_at", 'direction': 'DESC'}
         findScenes_params['scene_filter'] = {}
+        findScenes_params['scene_filter']['path'] = {'modifier': 'INCLUDES', 'value':'AdultTime'}
         if max_scenes != 0: findScenes_params['max_scenes'] = max_scenes
 
         if config.disambiguate_only:  #If only disambiguating scenes
@@ -1373,7 +1374,6 @@ def main(args):
                     logging.error("Did not find tag in Stash: " + tag_name, exc_info=config.debug_mode)
             
             findScenes_params_incl['scene_filter']['tags'] = { 'modifier': 'INCLUDES','value': [*required_tag_ids] }
-            findScenes_params_incl['scene_filter']['path'] = {'modifier': 'INCLUDES', 'value':'AdultTime'}
             if (not config.scrape_stash_id): # include only scenes without stash_id
                 findScenes_params_incl['scene_filter']['stash_id'] = { 'modifier': 'IS_NULL', 'value': 'none' }
             if (not config.scrape_organized): # include only scenes that are not organized
@@ -1396,7 +1396,6 @@ def main(args):
                     logging.error("Did not find tag in Stash: " + tag_name, exc_info=config.debug_mode)
             
             findScenes_params_excl['scene_filter']['tags'] = { 'modifier': 'EXCLUDES', 'value': [*excluded_tag_ids] }
-            findScenes_params_excl['scene_filter']['path'] = {'modifier': 'INCLUDES', 'value':'AdultTime'}
             if (not config.scrape_stash_id): # include only scenes without stash_id
                 findScenes_params_excl['scene_filter']['stash_id'] = { 'modifier': 'IS_NULL', 'value': 'none' }
             if (not config.scrape_organized): # include only scenes that are not organized

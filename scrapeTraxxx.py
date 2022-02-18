@@ -1351,6 +1351,7 @@ def main(args):
         findScenes_params = {}
         findScenes_params['filter'] = {'q': query, 'sort': "created_at", 'direction': 'DESC'}
         findScenes_params['scene_filter'] = {}
+        findScenes_params['scene_filter']['path'] = {'modifier': 'EXCLUDES', 'value':'AdultTime'}
         if max_scenes != 0: findScenes_params['max_scenes'] = max_scenes
 
         if config.disambiguate_only:  #If only disambiguating scenes
