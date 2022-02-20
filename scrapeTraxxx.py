@@ -491,7 +491,7 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
             first_item_name =  first_item_name + " " + first_item['date'].split('T')[0]
             
         if scene['date'] is None:
-            match_date = True
+            match_date = False
 
         performer_names = []
         if first_item['actors']:
@@ -571,8 +571,8 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
         if match_studio == True and scene['date'] is None:
             print(first_item_name)
 
-        if match_studio == True and match_ratio > 0.9:
-            first_item['date'] = scene['date']
+        if match_studio == True and match_date == True and match_ratio > 0.9:
+            #first_item['date'] = scene['date']
             matched_scene = first_item
             matched_item_name = first_item_name
         elif match_studio == True and len(scraped_data) == 1:
