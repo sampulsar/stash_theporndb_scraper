@@ -802,6 +802,32 @@ def getQuery(scene):
 
     return '' if scrape_query is None else str(scrape_query.strip())
 
+def getChannelsName(name):
+    global channels
+    channel_type = 'channel'
+    
+    if name.endswith(' (Network)'):
+        channel_type = 'network'
+        return None
+    
+    for channel in channels:
+        if channel['name'].lower().strip() == name.lower().strip() and channel['type'] == channel_type:
+                return channel
+        if channel['type'] == channel_type and channel['name'].replace(' ', '').replace('-', '').replace(',', '').replace('\'', '').lower().strip() == name.replace(' ', '').replace('-', '').replace(',', '').replace('\'', '').lower().strip():
+                return channel
+    return None
+
+def scrapeStudio(studio):
+    global my_stash
+    print (studio['name'])
+    
+    channel = getChannelsName(studio['name'])
+    if channel is None: 
+        return channel 
+    channel = createStashStudioData(channel)
+    channel["id"] = studio["id"]
+    print(channel)
+    my_stash.updateStudio(channel)
 
 def scrapeScene(scene):
     global my_stash
@@ -1413,6 +1439,12 @@ def main(args):
 
         if len(config.proxies) > 0: my_stash.setProxies(config.proxies)
 
+        # Studios
+        channels = getChannels()
+        studios = my_stash.populateStudios()
+        for studio in studios:
+            scrapeStudio(studio)
+
         if config.ambiguous_tag:
             my_stash.getTagByName(config.ambiguous_tag, True)
         if config.scrape_tag:
@@ -1501,7 +1533,6 @@ def main(args):
             print("Skipped scenes with a stash_id")
         print("Scenes to scrape", str(len(scenes)))
 
-        channels = getChannels()
         for scene in scenes:
             scrapeScene(scene)
 

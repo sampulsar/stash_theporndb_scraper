@@ -292,6 +292,7 @@ class stash_interface:
         result = self.callGraphQL(query)
         stashStudios = result["data"]["allStudios"]
         self.studios = stashStudios
+        return self.studios
 
     def populateTags(self):
         query = """
