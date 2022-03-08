@@ -22,6 +22,17 @@ from pathlib import Path
 
 import StashInterface
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 custom_clean_name = None
 if Path(__file__).with_name('custom.py').is_file():
     from custom import clean_name as custom_clean_name
@@ -99,7 +110,9 @@ def scrubScene(scene, dirs, file_name):
         date = "20" + date_search.group(1) + "-" + date_search.group(2) + "-" + date_search.group(3)
         if scene['date'] is None or scene['date'] == "" and file_name == scene['title']: 
             scene['date'] = date
-
+        elif scene['date'] != date:
+            scene['date'] = date
+        
         title_search = re.search("\.(\d{2}).(\d{2}).(\d{2}).(.+?).XXX", scene_title, re.IGNORECASE)
         if title_search and (file_name == scene['title'] or scene['title'][0].isdigit()):
             title =  title_search.group(4)
@@ -122,6 +135,7 @@ def scrubScene(scene, dirs, file_name):
                 title_search = re.search(".E(\d{3}).(.+?).XXX", scene_title, re.IGNORECASE)
                 if title_search:
                     scene['title'] = re.sub('\.', ' ', title_search.group(2))
+
             elif episode2_search:
                 title_search = re.search(".E(\d{2}).(.+?).XXX", scene_title, re.IGNORECASE)
                 if title_search:
@@ -452,6 +466,11 @@ def cleanResults(scene, scraped_data):
 
     return clean_data
 
+def days_between(d1, d2):
+    d1 = datetime.strptime(d1, "%Y-%m-%d")
+    d2 = datetime.strptime(d2, "%Y-%m-%d")
+    return abs((d2 - d1).days)
+
 def autoDisambiguateResults(scene, scrape_query, scraped_data):
     matched_scene = None
     matched_item_name = ""
@@ -460,7 +479,9 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
         match_url = False
         match_studio = False
         close_studio = False
+        performer_match = False
         match_date = False
+        days_diff= 0
         match_ratio = 0
         
         first_item = scraped_scene
@@ -487,11 +508,37 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
 
 
         if scene['date'] and first_item['date']:
-            match_date = (first_item['date'].split('T')[0] == scene['date'])
-            first_item_name =  first_item_name + " " + first_item['date'].split('T')[0]
-            
+            first_item_date = first_item['date'].split('T')[0]
+            match_date = (first_item_date == scene['date'])
+            if match_date == True:
+                first_item_name =  first_item_name + " " + first_item_date
+                first_item['date'] = first_item_date
+            else:
+                # flip month and day
+                first_item_alt_date = first_item_date.split('-')[0] + '-' + first_item_date.split('-')[2] + '-' + first_item_date.split('-')[1]
+                match_date = (first_item_alt_date == scene['date'])
+                if match_date == True:
+                    first_item_name =  first_item_name + " " + first_item_alt_date
+                    first_item['date'] = first_item_alt_date
+                else:
+                    first_item_name =  first_item_name + " " + first_item_date
+                    days_diff = days_between(first_item_date, scene['date'])
+                
         if scene['date'] is None:
             match_date = False
+            if keyIsSet(first_item, ["shootId"]):
+                first_item_episode =  "".join(re.findall('\d+', first_item['shootId']))
+                scene_path = scene["path"]
+                episode2_search = re.search('.E(\d{2}).', scene_path, re.IGNORECASE)
+                episode3_search = re.search('.E(\d{3}).', scene_path, re.IGNORECASE)
+                if episode3_search:
+                    match_episode = episode3_search.group(1)
+
+                elif episode2_search:
+                    match_episode = episode3_search.group(1)
+                match_date = match_episode == first_item_episode
+                print(match_episode)
+                print(first_item_episode)
 
         performer_names = []
         if first_item['actors']:
@@ -508,8 +555,8 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
 
             first_item_name =  first_item_name + " " + ' '.join(map(str, performer_names))
 
-        if scene['url'] and first_item['url']:
-            match_url = scene['url'] == first_item['url'] 
+        #if scene['url'] and first_item['url']:
+        #    match_url = scene['url'] == first_item['url'] 
 
         
         if scene['title'] and first_item['title']:
@@ -540,6 +587,7 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
                 stripString(' '.join(map(str, performer_names))), 
                 stripString(scene_title)).ratio()
             if match_ratio < temp_ratio:
+                performer_match = True
                 match_ratio = temp_ratio
             
             first_item_name =  first_item_name + " " + title
@@ -565,16 +613,40 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
 
         # print("Test Data For:     " + first_item_name)    
         if match_studio == True and match_date == True and match_ratio > 0.65:
+            # print("matched studio and date")
             matched_scene = first_item
             matched_item_name = first_item_name
 
         if match_studio == True and scene['date'] is None:
             print(first_item_name)
 
-        if match_studio == True and match_date == True and match_ratio > 0.9:
-            #first_item['date'] = scene['date']
-            matched_scene = first_item
-            matched_item_name = first_item_name
+        if match_studio == True and match_ratio > 0.9:
+            # print("matched studio and 90%")
+            if match_date == True:
+                #print("matched date")
+                matched_scene = first_item
+                matched_item_name = first_item_name
+            elif performer_match == True:
+                print("performer_match")
+                print(days_diff)
+                print(studio_name)
+                print(first_item_name)
+                if len(scraped_data) == 1:
+                    new_item = copy.deepcopy(first_item)
+                    new_item['date'] = scene['date']
+                    scraped_data.append(new_item)
+            #elif days_diff == 1 and (studio_name == "Cuckold Sessions"):
+            #    # metadata date offset
+            #    matched_scene = first_item
+            #    matched_item_name = first_item_name
+            else:
+                #print(studio_name)
+                #print(first_item_name)
+                if len(scraped_data) == 1:
+                    new_item = copy.deepcopy(first_item)
+                    new_item['date'] = scene['date']
+                    scraped_data.append(new_item)
+                
         elif match_studio == True and len(scraped_data) == 1:
             new_item = copy.deepcopy(first_item)
             new_item['date'] = scene['date']
@@ -598,7 +670,7 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
         else:
             return scraped_data
 
-    print("Found Data For:    " + matched_item_name)
+    print(bcolors.OKGREEN + "Found Data For:    " + matched_item_name + bcolors.ENDC)
     new_data = []
     new_data.append(matched_scene)
     return new_data
@@ -763,7 +835,7 @@ def scrapeScene(scene):
             my_stash.updateSceneData(scene_data)
             return None
 
-        print("Grabbing Data For: " + scrape_query)
+        print(bcolors.OKGREEN + "Grabbing Data For: " + scrape_query +  bcolors.ENDC)
 
         scraped_data = cleanResults(scene, scraped_data)
         
@@ -775,7 +847,9 @@ def scrapeScene(scene):
             scraped_data = manuallyDisambiguateResults(scraped_data)
             
         if len(scraped_data) > 1:  # Handling of ambiguous scenes
-            print("Ambiguous data found for: [{}], skipping".format(scrape_query))
+            print(bcolors.WARNING + "Ambiguous data found for: [{}], skipping".format(scrape_query) + bcolors.ENDC)
+            for scraped_scene in scraped_data:
+                print(scraped_scene['entity']['name'] + " " + scraped_scene['date'].split('T')[0] + " " + scraped_scene['title'])
             if config.ambiguous_tag:
                 scene_data["tag_ids"].append(my_stash.getTagByName(config.ambiguous_tag)['id'])
             my_stash.updateSceneData(scene_data)
@@ -790,7 +864,7 @@ def scrapeScene(scene):
             scene_data["tag_ids"].append(
                 my_stash.getTagByName(config.unmatched_tag)['id'])
             my_stash.updateSceneData(scene_data)
-            print("No data found for: [{}]".format(scrape_query))
+            print(bcolors.FAIL + "No data found for: [{}]".format(scrape_query) + bcolors.ENDC)
     except Exception as e:
         logging.error("Exception encountered when scraping '" + scrape_query, exc_info=config.debug_mode)
 
