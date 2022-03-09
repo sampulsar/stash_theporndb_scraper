@@ -19,6 +19,7 @@ from urllib.parse import quote
 from PIL import Image
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from pathlib import Path
+from datetime import datetime
 
 import StashInterface
 
@@ -819,14 +820,13 @@ def getChannelsName(name):
 
 def scrapeStudio(studio):
     global my_stash
-    print (studio['name'])
     
     channel = getChannelsName(studio['name'])
     if channel is None: 
         return channel 
     channel = createStashStudioData(channel)
     channel["id"] = studio["id"]
-    print(channel)
+
     my_stash.updateStudio(channel)
 
 def scrapeScene(scene):
@@ -1439,11 +1439,13 @@ def main(args):
 
         if len(config.proxies) > 0: my_stash.setProxies(config.proxies)
 
+        my_stash.waitForIdle()  #Wait for Stash to idle before scraping
         # Studios
         channels = getChannels()
         studios = my_stash.populateStudios()
         for studio in studios:
             scrapeStudio(studio)
+        channels = getChannels()
 
         if config.ambiguous_tag:
             my_stash.getTagByName(config.ambiguous_tag, True)
