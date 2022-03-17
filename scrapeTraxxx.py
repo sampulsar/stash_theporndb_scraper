@@ -482,12 +482,14 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
         close_studio = False
         performer_match = False
         match_date = False
+        match_episode = False
         days_diff= 0
         match_ratio = 0
         
         first_item = scraped_scene
         first_item_name = ""
         studio_name = ""
+        episode = ""
         if keyIsSet(scene, ["studio", "name"]) and keyIsSet(first_item, ['entity', 'name']):
             studio_name = scene['studio']['name']
             match_studio = (stripString(first_item['entity']['name']) == stripString(scene['studio']['name']))
@@ -524,7 +526,7 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
                 else:
                     first_item_name =  first_item_name + " " + first_item_date
                     days_diff = days_between(first_item_date, scene['date'])
-                
+        
         if scene['date'] is None:
             match_date = False
             if keyIsSet(first_item, ["shootId"]):
@@ -533,13 +535,12 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
                 episode2_search = re.search('.E(\d{2}).', scene_path, re.IGNORECASE)
                 episode3_search = re.search('.E(\d{3}).', scene_path, re.IGNORECASE)
                 if episode3_search:
-                    match_episode = episode3_search.group(1)
-
+                    episode = episode3_search.group(1)
                 elif episode2_search:
-                    match_episode = episode3_search.group(1)
-                match_date = match_episode == first_item_episode
-                print(match_episode)
-                print(first_item_episode)
+                    episode = episode3_search.group(1)
+                match_episode = episode == first_item_episode
+                if match_episode == True:
+                    first_item_name =  first_item_name + " E" + episode
 
         performer_names = []
         if first_item['actors']:
@@ -612,8 +613,13 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
             matched_scene = first_item
             matched_item_name = first_item_name
 
+        if match_studio == True and match_episode == True:
+            print("matched studio and episode")
+            matched_scene = first_item
+            matched_item_name = first_item_name
+            
         # print("Test Data For:     " + first_item_name)    
-        if match_studio == True and match_date == True and match_ratio > 0.65:
+        if match_studio == True and match_date == True and match_ratio > 0.85:
             # print("matched studio and date")
             matched_scene = first_item
             matched_item_name = first_item_name
@@ -629,8 +635,6 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
                 matched_item_name = first_item_name
             elif performer_match == True:
                 print("performer_match")
-                print(days_diff)
-                print(studio_name)
                 print(first_item_name)
                 if len(scraped_data) == 1:
                     new_item = copy.deepcopy(first_item)

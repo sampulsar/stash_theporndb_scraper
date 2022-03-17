@@ -24,6 +24,17 @@ from pathlib import Path
 
 import StashInterface
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    
 custom_clean_name = None
 if Path(__file__).with_name('custom.py').is_file():
     from custom import clean_name as custom_clean_name
@@ -212,9 +223,11 @@ def getPerformer(performer):
     performer_data = api_search_req("actor_id", performer['actor_id'], api_url)
     if (performer_data and len(performer_data) == 1):
         performer = performer_data[0]
-        # print(performer["attributes"])
+        performer["name"] = performer["name"].strip()
         if " " not in performer["name"]:
-            performer["name"] = performer["name"] + " (AdultTime [" + str(performer['actor_id']) + "])"
+            stash_performer = my_stash.getPerformerByName(performer["name"])
+            if stash_performer is None:
+                performer["name"] = performer["name"] + " (AdultTime [" + str(performer['actor_id']) + "])"
     
     return performer
 
@@ -338,7 +351,7 @@ def autoDisambiguateResults(scene, scrape_query, performers, clip_path, scraped_
     if matched_scene is None:
         return scraped_data
 
-    print("Found Data For:    " + matched_item_name )
+    print(bcolors.OKGREEN + "Found Data For:    " + matched_item_name + bcolors.ENDC)
     
     return new_data
 
@@ -432,12 +445,17 @@ def scrapeScene(scene):
         scene_data = my_stash.createSceneUpdateData(scene)  # Start with our current data as a template
         SCENE_ID = scene_data["id"]
         SCENE_TITLE = scene_data["title"]
-        SCENE_PERFORMERS = scene_data["title"]
+        if re.search(r'^[A-z]:\\', scene['path']):  #If we have Windows-like paths
+            parse_result = re.search(r'^[A-z]:\\((.+)\\)*(.+)\.(.+)$', scene['path'])
+        else:  #Else assume Unix-like paths
+            parse_result = re.search(r'^\/((.+)\/)*(.+)\.(.+)$', scene['path'])
+        SCENE_TITLE = parse_result.group(3)
+        SCENE_PERFORMERS = SCENE_TITLE
         pathSplit = scene.get("path").split('/')
         SCENE_STUDIO = pathSplit[len(pathSplit) - 2]
         CLIP_PATH = None
         SCENE_URL = None
-        if keyIsSet(scene, ['url']): SCENE_URL = scene_data["url"]
+        #if keyIsSet(scene, ['url']): SCENE_URL = scene_data["url"]
         
         if SCENE_URL and SCENE_ID is None:
             logging.debug("[DEBUG] URL Scraping: {}".format(SCENE_URL))
@@ -519,7 +537,8 @@ def scrapeScene(scene):
                 logging.debug("[API] Search give {} result(s)".format(len(scraped_data)))
 
         scrape_query = ""
-        print("Grabbing Data For: ", end=" ")
+        
+        print(bcolors.OKGREEN + "Grabbing Data For: ", end=" ")
         if SCENE_STUDIO is not None: 
             scrape_query = scrape_query + SCENE_STUDIO + " "
             print(SCENE_STUDIO, end=" ")
@@ -531,7 +550,7 @@ def scrapeScene(scene):
         if CLIP_PATH is not None: 
             scrape_query = scrape_query + '[' + CLIP_PATH + ']'
             print('[' + CLIP_PATH + ']', end=" ")
-        print()
+        print(bcolors.ENDC)
         
         if scraped_data is None:
             #get api again
@@ -544,8 +563,21 @@ def scrapeScene(scene):
             scraped_data = autoDisambiguateResults(scene, SCENE_TITLE, SCENE_PERFORMERS, CLIP_PATH, scraped_data)
             #print("Auto disambiguated")
         
-        #if len(scraped_data) > 1:  # Manual disambiguate
-        #    scraped_data = manuallyDisambiguateResults(scraped_data)
+        if re.search(r'^[A-z]:\\', scene['path']):  #If we have Windows-like paths
+            parse_result = re.search(r'^[A-z]:\\((.+)\\)*(.+)\.(.+)$', scene['path'])
+        else:  #Else assume Unix-like paths
+            parse_result = re.search(r'^\/((.+)\/)*(.+)\.(.+)$', scene['path'])
+        file_name = parse_result.group(3)
+        
+        if len(scraped_data) > 0:
+            print(scene['title'])
+        
+        if scene['title'] != file_name and stripString(scene['title']) != stripString(scraped_data[0]['title']) and len(scraped_data) == 1:
+            if config.manual_disambiguate:
+                if scraped_data[0]['sitename'] != 'Vixen':
+                    scraped_data = manuallyDisambiguateResults(scraped_data)
+            else:
+                scraped_data.append(scraped_data[0])
             
         if len(scraped_data) > 1 and config.manual_disambiguate:  # Manual disambiguate
             scraped_data = manuallyDisambiguateResults(scraped_data)
@@ -626,7 +658,7 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
                 temp_studio = getChannel(scraped_scene['studio']['name'])
                 if temp_studio is not None:
                     scraped_studio = temp_studio
-            
+            scraped_studio['name'] = match_site(scraped_studio['name'])
             if config.compact_studio_names:
                 scraped_studio['name'] = scraped_studio['name'].replace(' ', '')
             stash_studio = my_stash.getStudioByName(scraped_studio['name'])
@@ -717,6 +749,7 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
 
         logging.debug("Now updating scene with the following data:")
         logging.debug(scene_data)
+        
         my_stash.updateSceneData(scene_data)
     except Exception as e:
         logging.error("Scrape succeeded, but update failed:", exc_info=config.debug_mode)
@@ -784,6 +817,9 @@ def api_search_req(type_search,query,api_url):
         api_search = api_request.json()["results"][0].get("hits")
         if api_search:
             return api_search
+        if api_request.json()["results"][0].get("nbHits") == 0:
+            print(bcolors.FAIL + "No results returned" + bcolors.ENDC)
+    
     return None
 
 
@@ -881,10 +917,11 @@ def match_site(argument):
         'devilstgirls':'Devils T-Girls',
         # 'dpfanatics':'DPFanatics', Pulled from Gamma
         'evilangel':'Evil Angel',
+        'Evil Angel Films':'Evil Angel',
         'femalesubmission':'Female Submission',
         'footsiebabes':'Footsie Babes',
         'gapeland':'Gapeland',
-        'genderx':'Gender X',
+        'genderx':'GenderXFilms',
         'girlcore':'Girlcore',
         'girlsunderarrest':'Girls Under Arrest',
         'girlstryanal':'Girls Try Anal',
@@ -932,7 +969,7 @@ def match_site(argument):
         'welikegirls':'We Like Girls',
         'wheretheboysarent':'Where the Boys Arent',
         'wicked':'Wicked',
-        'zerotolerance':'Zero Tolerance',     
+        'zerotolerance':'Zero Tolerance Films',
     }
     return match.get(argument, argument)
 
