@@ -69,6 +69,7 @@ def cleanString(string):
     string = string.replace("#", ' ')
     string = string.replace(" 480p ", ' ')
     string = string.replace(" mp4 ", ' ')
+    string = string.strip()
 
     return string
 
@@ -85,6 +86,10 @@ def stripString(string):
     string = string.replace("nude girls ", ' ')
     string = string.replace("girl girl ", ' ')
     string = string.replace(' ', '')
+    string = string.replace("?", '')
+    string = string.replace("!", '')
+    string = string.replace('\'', '')
+    string = string.strip()
     
     return string
 
@@ -534,10 +539,13 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
                 scene_path = scene["path"]
                 episode2_search = re.search('.E(\d{2}).', scene_path, re.IGNORECASE)
                 episode3_search = re.search('.E(\d{3}).', scene_path, re.IGNORECASE)
+                
                 if episode3_search:
                     episode = episode3_search.group(1)
                 elif episode2_search:
                     episode = episode3_search.group(1)
+                    
+                console.log(episode)
                 match_episode = episode == first_item_episode
                 if match_episode == True:
                     first_item_name =  first_item_name + " E" + episode
@@ -809,17 +817,26 @@ def getQuery(scene):
 
 def getChannelsName(name):
     global channels
+    name = stripString(name)
     channel_type = 'channel'
     
-    if name.endswith(' (Network)'):
+    if name.endswith('(network)'):
         channel_type = 'network'
+        name.replace('(network)', '')
         return None
     
     for channel in channels:
-        if channel['name'].lower().strip() == name.lower().strip() and channel['type'] == channel_type:
+        channel_name = stripString(channel['name'])
+        channel_slug = stripString(channel['slug'])
+        
+        if channel_type == 'channel':
+            if (channel_name == name or channel_slug == name):
                 return channel
-        if channel['type'] == channel_type and channel['name'].replace(' ', '').replace('-', '').replace(',', '').replace('\'', '').lower().strip() == name.replace(' ', '').replace('-', '').replace(',', '').replace('\'', '').lower().strip():
+        elif channel['type'] == channel_type:
+            if (channel_name == name or channel_slug == name):
                 return channel
+        
+    print(bcolors.FAIL + "'" + name + "' (" + channel_type + ")" + bcolors.ENDC)
     return None
 
 def scrapeStudio(studio):
