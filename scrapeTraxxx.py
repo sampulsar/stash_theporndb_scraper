@@ -324,8 +324,12 @@ def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from r
             stash_studio["parent_id"] = parent["id"]
     if keyIsSet(traxxx_studio, ['logo']) and traxxx_studio["logo"] is not None:
         stash_studio["image"] = config.traxxx_server_URL + "/img/logos/" + traxxx_studio["logo"]
+    else:
+        stash_studio["image"] = config.traxxx_server_URL + "/img/logos/" + traxxx_studio["slug"] + "/" + traxxx_studio["slug"] + ".png"
     
     #short_name into aliases
+    if keyIsSet(traxxx_studio, ['slug']) and traxxx_studio["slug"] is not None:
+        stash_studio["aliases"] = [].append(traxxx_studio["slug"])
     
     return stash_studio
             
@@ -815,9 +819,9 @@ def getQuery(scene):
 
     return '' if scrape_query is None else str(scrape_query.strip())
 
-def getChannelsName(name):
+def getChannelsName(studio):
     global channels
-    name = stripString(name)
+    name = stripString(studio['name'])
     channel_type = 'channel'
     
     if name.endswith('(network)'):
@@ -831,9 +835,18 @@ def getChannelsName(name):
         
         if channel_type == 'channel':
             if (channel_name == name or channel_slug == name):
+                channel['type'] = 'channel'
                 return channel
         elif channel['type'] == channel_type:
             if (channel_name == name or channel_slug == name):
+                return channel
+    
+    if keyIsSet(studio, ['aliases']) and studio["aliases"] is not None:
+        for alias in studio['aliases']: 
+            studio['aliases'] = []
+            studio['name'] = alias
+            channel = getChannelsName(studio)
+            if channel is not None:
                 return channel
         
     print(bcolors.FAIL + "'" + name + "' (" + channel_type + ")" + bcolors.ENDC)
@@ -842,7 +855,7 @@ def getChannelsName(name):
 def scrapeStudio(studio):
     global my_stash
     
-    channel = getChannelsName(studio['name'])
+    channel = getChannelsName(studio)
     if channel is None: 
         return channel 
     channel = createStashStudioData(channel)

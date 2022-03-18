@@ -286,6 +286,7 @@ class stash_interface:
         name
         url
         image_path
+        aliases
       }
     }
     """
