@@ -324,7 +324,7 @@ def createStashStudioData(traxxx_studio):  # Creates stash-compliant data from r
             stash_studio["parent_id"] = parent["id"]
     if keyIsSet(traxxx_studio, ['logo']) and traxxx_studio["logo"] is not None:
         stash_studio["image"] = config.traxxx_server_URL + "/img/logos/" + traxxx_studio["logo"]
-    else:
+    elif keyIsSet(traxxx_studio, ['slug']) and traxxx_studio["slug"] is not None:
         stash_studio["image"] = config.traxxx_server_URL + "/img/logos/" + traxxx_studio["slug"] + "/" + traxxx_studio["slug"] + ".png"
     
     #short_name into aliases
@@ -824,9 +824,9 @@ def getChannelsName(studio):
     name = stripString(studio['name'])
     channel_type = 'channel'
     
-    if name.endswith('(network)'):
+    if name.endswith(config.studio_network_suffix.lower().strip()):
         channel_type = 'network'
-        name.replace('(network)', '')
+        name.replace(config.studio_network_suffix.lower().strip(), '')
         return None
     
     for channel in channels:
@@ -837,6 +837,14 @@ def getChannelsName(studio):
             if (channel_name == name or channel_slug == name):
                 channel['type'] = 'channel'
                 return channel
+                
+            if keyIsSet(channel, ['parent']) and channel["parent"] is not None:
+                channel_name = stripString(channel["parent"]["name"])
+                channel_slug = stripString(channel["parent"]["slug"])
+                if (channel_name == name or channel_slug == name):
+                    channel["parent"]['type'] = 'channel'
+                    return channel["parent"]
+                
         elif channel['type'] == channel_type:
             if (channel_name == name or channel_slug == name):
                 return channel
