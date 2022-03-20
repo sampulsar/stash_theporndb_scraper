@@ -547,9 +547,9 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
                 if episode3_search:
                     episode = episode3_search.group(1)
                 elif episode2_search:
-                    episode = episode3_search.group(1)
+                    episode = episode2_search.group(1)
                     
-                console.log(episode)
+                print(episode)
                 match_episode = episode == first_item_episode
                 if match_episode == True:
                     first_item_name =  first_item_name + " E" + episode
@@ -916,8 +916,8 @@ def scrapeScene(scene):
             
         if len(scraped_data) > 1:  # Handling of ambiguous scenes
             print(bcolors.WARNING + "Ambiguous data found for: [{}], skipping".format(scrape_query) + bcolors.ENDC)
-            for scraped_scene in scraped_data:
-                print(scraped_scene['entity']['name'] + " " + scraped_scene['date'].split('T')[0] + " " + scraped_scene['title'])
+            #for scraped_scene in scraped_data:
+            #    print(scraped_scene['entity']['name'] + " " + scraped_scene['date'].split('T')[0] + " " + scraped_scene['title'])
             if config.ambiguous_tag:
                 scene_data["tag_ids"].append(my_stash.getTagByName(config.ambiguous_tag)['id'])
             my_stash.updateSceneData(scene_data)
@@ -934,7 +934,7 @@ def scrapeScene(scene):
             my_stash.updateSceneData(scene_data)
             print(bcolors.FAIL + "No data found for: [{}]".format(scrape_query) + bcolors.ENDC)
     except Exception as e:
-        logging.error("Exception encountered when scraping '" + scrape_query, exc_info=config.debug_mode)
+        logging.error("Exception encountered when scraping '" + scrape_query, exc_info=True)
 
 
 def manConfirmAlias(scraped_performer, site):  #Returns scraped_performer if response is positive, None otherwise.  If Always or Site are selected, scraped_performer is updated to include a new alias
