@@ -83,8 +83,6 @@ def stripString(string):
     string = string.replace('.', '')
     string = string.replace(" & ", ' ')
     string = string.replace(" and ", ' ')
-    string = string.replace("nude girls ", ' ')
-    string = string.replace("girl girl ", ' ')
     string = string.replace(' ', '')
     string = string.replace("?", '')
     string = string.replace("!", '')
@@ -160,6 +158,8 @@ def scrubScene(scene, dirs, file_name):
             scene['studio']['name'] = findChannel(dirs[-3])
             if scene['studio']['name'].lower() == "sis":
                 scene['studio']['name'] = "SisPorn"
+            if scene['studio']['name'].lower() == "pornworld":
+                scene['studio']['name'] = "Analvids"
     return scene        
 
 
@@ -491,6 +491,7 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
         close_studio = False
         performer_match = False
         match_date = False
+        close_date = False
         match_episode = False
         days_diff= 0
         match_ratio = 0
@@ -535,7 +536,11 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
                 else:
                     first_item_name =  first_item_name + " " + first_item_date
                     days_diff = days_between(first_item_date, scene['date'])
-        
+                    if days_diff == -1:
+                        close_date = True
+                    elif days_diff == 1:
+                        close_date = True
+                        
         if scene['date'] is None:
             match_date = False
             if keyIsSet(first_item, ["shootId"]):
@@ -584,6 +589,12 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
                 scene_title = scene_title.replace('Nude Girls', '')
                 scene_title = scene_title.replace('Video Masturbation', '')
                 scene_title = scene_title.replace('Girl Girl', '')
+            if (studio_name == "Jav Hub"):
+                title = title.replace('JAPANESE', '')
+                
+                scene_title = scene_title.replace('JAPANESE', '')
+            
+            
             
             temp_ratio = difflib.SequenceMatcher(None, 
                 stripString(title), 
@@ -635,8 +646,15 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
             # print("matched studio and date")
             matched_scene = first_item
             matched_item_name = first_item_name
+        #elif match_studio == True and match_date == True:
+            #print("matched studio and date")
+            #print(first_item_name)
 
         if match_studio == True and scene['date'] is None:
+            print("no date")
+            print(first_item_name)
+        elif match_studio == True and close_date == True:
+            print("close date")
             print(first_item_name)
 
         if match_studio == True and match_ratio > 0.9:
@@ -645,15 +663,22 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
                 #print("matched date")
                 matched_scene = first_item
                 matched_item_name = first_item_name
+            elif performer_match == True and close_date == True:
+                print("close performer_match")
+                print(first_item_name)
+                print(close_date)
+            
             elif performer_match == True:
                 print("performer_match")
                 print(first_item_name)
+                
                 if len(scraped_data) == 1:
                     new_item = copy.deepcopy(first_item)
                     new_item['date'] = scene['date']
                     scraped_data.append(new_item)
-            #elif days_diff == 1 and (studio_name == "Cuckold Sessions"):
-            #    # metadata date offset
+            elif days_diff == 1 and (studio_name == "FamilyTherapyXXX"):
+                print("use close date")
+                # metadata date offset
             #    matched_scene = first_item
             #    matched_item_name = first_item_name
             else:
@@ -836,6 +861,7 @@ def getChannelsName(studio):
         if channel_type == 'channel':
             if (channel_name == name or channel_slug == name):
                 channel['type'] = 'channel'
+                channel['name'] = channel['name'].replace(config.studio_network_suffix, '')
                 return channel
                 
             if keyIsSet(channel, ['parent']) and channel["parent"] is not None:
@@ -843,6 +869,7 @@ def getChannelsName(studio):
                 channel_slug = stripString(channel["parent"]["slug"])
                 if (channel_name == name or channel_slug == name):
                     channel["parent"]['type'] = 'channel'
+                    channel["parent"]['name'] = channel["parent"]['name'].replace(config.studio_network_suffix, '')
                     return channel["parent"]
                 
         elif channel['type'] == channel_type:
@@ -864,8 +891,10 @@ def scrapeStudio(studio):
     global my_stash
     
     channel = getChannelsName(studio)
+    name = stripString(studio['name'])
     if channel is None: 
-        return channel 
+        return channel
+    
     channel = createStashStudioData(channel)
     channel["id"] = studio["id"]
 
