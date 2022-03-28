@@ -62,33 +62,52 @@ def lreplace(pattern, sub, string):
     """
     return re.sub('^%s' % pattern, sub, string)
 
-def cleanString(string):
+
+def cleanMatch(string):
+    string = string.lower()
+    string = string.replace('(', ' ')
+    string = string.replace(')', ' ')
+    string = string.replace(' with ', ' ')
+    string = string.replace(' in ', ' ')
+    string = string.replace('&', ' ')
+    string = string.replace(' and ', ' ')
     string = string.replace('-', ' ')
-    string = string.replace("'", '')
-    string = string.replace(":", '')
-    string = string.replace("#", ' ')
-    string = string.replace(" 480p ", ' ')
-    string = string.replace(" mp4 ", ' ')
+    string = cleanString(string)
+    string = string.replace(' ', '')
     string = string.strip()
 
     return string
 
-def stripString(string):
+def slugify(string, slug = ''):
     if string is None or string == "": 
         return ""
-        
-    string = string.lower()
+
     string = cleanString(string)
-    string = string.replace(',', '')
-    string = string.replace('.', '')
-    string = string.replace(" & ", ' ')
-    string = string.replace(" and ", ' ')
-    string = string.replace(' ', '')
-    string = string.replace("?", '')
-    string = string.replace("!", '')
+    string = string.replace('&', ' ')
+    string = string.replace(' ', slug)
+    return string
+
+def cleanString(string):
+    if string is None or string == "": 
+        return ""
+
+    string = string.lower()
+    string = string.replace('.', ' ')
+    string = string.replace(',', ' ')
     string = string.replace('\'', '')
-    string = string.strip()
+    string = string.replace('/', ' ')
+    string = string.replace('!', ' ')
+    string = string.replace('#', ' ')
+    string = string.replace('%', ' ')
+    string = string.replace('+', ' ')
+    string = string.replace('?', ' ')
+    string = string.replace('"', ' ')
+    string = string.replace(':', ' ')
+    string = string.replace('-', ' ')
+    string = string.replace('  ', ' ')
     
+    string = string.strip()
+
     return string
 
 def scrubFileName(file_name):
@@ -109,7 +128,8 @@ def scrubScene(scene, dirs, file_name):
     scene_title = file_name
     original_title = scene['title']
     
-    date_search = re.search('.(\d{2}).(\d{2}).(\d{2}).[A-z]', scene_title, re.IGNORECASE)
+    dateTitle = scene_title.replace('AllOver30','AllOver')
+    date_search = re.search('[A-z].(\d{2}).(\d{2}).(\d{2}).', dateTitle, re.IGNORECASE)
     if date_search:
         date = "20" + date_search.group(1) + "-" + date_search.group(2) + "-" + date_search.group(3)
         if scene['date'] is None or scene['date'] == "" and file_name == scene['title']: 
@@ -160,6 +180,8 @@ def scrubScene(scene, dirs, file_name):
                 scene['studio']['name'] = "SisPorn"
             if scene['studio']['name'].lower() == "pornworld":
                 scene['studio']['name'] = "Analvids"
+            if scene['studio']['name'].lower() == "genderx":
+                scene['studio']['name'] = "GenderXFilms"
     return scene        
 
 
@@ -358,7 +380,7 @@ def getJpegImage(image_url):
 def getPerformer(name, performer_id):
     global traxxx_headers
     global traxxx_error_count
-    search_url = config.traxxx_server_URL + "/api/actors?limit=3&q=" + urllib.parse.quote(name)
+    search_url = config.traxxx_server_URL + "/api/actors?limit=9&q=" + urllib.parse.quote(name)
     data_url_prefix = config.traxxx_server_URL + "/api/actors/"
     try:
         time.sleep(traxxx_sleep)  # sleep before every request to avoid being blocked
@@ -426,7 +448,7 @@ def sceneQuery(query):  # Scrapes Traxxx based on query.  Returns an array of sc
     global traxxx_error_count
     if custom_sceneQuery is not None:
         query = custom_sceneQuery(query)
-    url = config.traxxx_server_URL + "/api/scenes?limit=3&q=" + urllib.parse.quote(query.replace(" ", "."))
+    url = config.traxxx_server_URL + "/api/scenes?limit=9&q=" + urllib.parse.quote(query.replace(" ", "."))
     result = None
     try:
         time.sleep(traxxx_sleep)  # sleep before every request to avoid being blocked
@@ -462,17 +484,14 @@ def cleanResults(scene, scraped_data):
             first_item_studio = first_item['entity']['name']
             scene_studio = scene['studio']['name']
             
-            if (stripString(first_item_studio) == stripString(scene_studio)):
+            if (slugify(first_item_studio) == slugify(scene_studio)):
                 clean_data.append(first_item)
-            elif stripString(scene_studio) == "pornmegaload" or stripString(scene_studio) == "xlgirls":
-                if stripString(first_item_studio) == "xlgirls" or stripString(first_item_studio) == "scoreland" or stripString(first_item_studio) == "18eighteen" or stripString(first_item_studio) == "50plusmilfs" or stripString(first_item_studio) == "60plusmilfs" or stripString(first_item_studio) == "40somethingmag":
+            elif slugify(scene_studio) == "pornmegaload" or slugify(scene_studio) == "xlgirls":
+                if slugify(first_item_studio) == "xlgirls" or slugify(first_item_studio) == "scoreland" or slugify(first_item_studio) == "18eighteen" or slugify(first_item_studio) == "50plusmilfs" or slugify(first_item_studio) == "60plusmilfs" or slugify(first_item_studio) == "40somethingmag":
                     clean_data.append(first_item)
-            elif stripString(scene_studio) == "legalporno" or stripString(scene_studio) == "analvids" or stripString(scene_studio) == "ddfbusty" or stripString(scene_studio) == "handsonhardcore" or stripString(scene_studio) == "pornworld" or stripString(scene_studio) == "eurogirlsongirls" or stripString(scene_studio) == "houseoftaboo":
-                if stripString(first_item_studio) == "legalporno" or stripString(first_item_studio) == "analvids" or stripString(first_item_studio) == "ddfbusty" or stripString(first_item_studio) == "handsonhardcore" or stripString(first_item_studio) == "pornworld" or stripString(first_item_studio) == "eurogirlsongirls" or stripString(first_item_studio) == "houseoftaboo":
+            elif slugify(scene_studio) == "legalporno" or slugify(scene_studio) == "analvids" or slugify(scene_studio) == "ddfbusty" or slugify(scene_studio) == "handsonhardcore" or slugify(scene_studio) == "pornworld" or slugify(scene_studio) == "eurogirlsongirls" or slugify(scene_studio) == "houseoftaboo":
+                if slugify(first_item_studio) == "legalporno" or slugify(first_item_studio) == "analvids" or slugify(first_item_studio) == "ddfbusty" or slugify(first_item_studio) == "handsonhardcore" or slugify(first_item_studio) == "pornworld" or slugify(first_item_studio) == "eurogirlsongirls" or slugify(first_item_studio) == "houseoftaboo":
                     clean_data.append(first_item)
-                
-            #else:
-            #    print(stripString(first_item_studio) + ' == ' + stripString(scene_studio))
 
     return clean_data
 
@@ -502,9 +521,9 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
         episode = ""
         if keyIsSet(scene, ["studio", "name"]) and keyIsSet(first_item, ['entity', 'name']):
             studio_name = scene['studio']['name']
-            match_studio = (stripString(first_item['entity']['name']) == stripString(scene['studio']['name']))
+            match_studio = (slugify(first_item['entity']['name']) == slugify(scene['studio']['name']))
             
-            if (stripString(first_item['entity']['name']) != stripString(scene['studio']['name'])):
+            if (slugify(first_item['entity']['name']) != slugify(scene['studio']['name'])):
                 close_studio = True
             
             first_item_name =  first_item_name + " " + first_item['entity']['name']
@@ -512,9 +531,9 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
         if match_studio == False:
             if keyIsSet(scene, ["studio", "name"]) and keyIsSet(first_item, ['entity', 'parent', 'name']):
                 studio_name = scene['studio']['name']
-                match_studio = (stripString(first_item['entity']['parent']['name']) == stripString(scene['studio']['name']))
+                match_studio = (slugify(first_item['entity']['parent']['name']) == slugify(scene['studio']['name']))
             
-                if (stripString(first_item['entity']['parent']['name']) != stripString(scene['studio']['name'])):
+                if (slugify(first_item['entity']['parent']['name']) != slugify(scene['studio']['name'])):
                     close_studio = True
             
                 first_item_name =  first_item_name + " " + first_item['entity']['parent']['name']
@@ -564,9 +583,9 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
             for scraped_performer in first_item["actors"]:
                 not_female = False
                  
-                if keyIsSet(scraped_performer, ["gender"]) and scraped_performer["gender"] != 'female':
+                if keyIsSet(scraped_performer, ["gender"]) and scraped_performer["gender"] == 'male':
                     not_female = True
-
+                    
                 if (not_female):
                     continue  # End current loop on male performers not in path
 
@@ -581,7 +600,7 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
         if scene['title'] and first_item['title']:
             title = first_item['title']
             scene_title = scene['title']
-            if (studio_name == "Abby Winters"):
+            if studio_name == "Abby Winters":
                 title = title.replace('Nude Girls', '')
                 title = title.replace('Video Masturbation', '')
                 title = title.replace('Girl Girl', '')
@@ -589,28 +608,28 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
                 scene_title = scene_title.replace('Nude Girls', '')
                 scene_title = scene_title.replace('Video Masturbation', '')
                 scene_title = scene_title.replace('Girl Girl', '')
-            if (studio_name == "Jav Hub"):
+            if studio_name == "Jav Hub":
                 title = title.replace('JAPANESE', '')
-                
+
                 scene_title = scene_title.replace('JAPANESE', '')
             
             
             
             temp_ratio = difflib.SequenceMatcher(None, 
-                stripString(title), 
-                stripString(scene_title)).ratio()
+                cleanMatch(title), 
+                cleanMatch(scene_title)).ratio()
             if match_ratio < temp_ratio:
                 match_ratio = temp_ratio
             
             temp_ratio = difflib.SequenceMatcher(None, 
-                stripString(' '.join(map(str, performer_names)) + title), 
-                stripString(scene_title)).ratio()
+                cleanMatch(' '.join(map(str, performer_names)) + title), 
+                cleanMatch(scene_title)).ratio()
             if match_ratio < temp_ratio:
                 match_ratio = temp_ratio
             
             temp_ratio = difflib.SequenceMatcher(None, 
-                stripString(' '.join(map(str, performer_names))), 
-                stripString(scene_title)).ratio()
+                cleanMatch(' '.join(map(str, performer_names))), 
+                cleanMatch(scene_title)).ratio()
             if match_ratio < temp_ratio:
                 performer_match = True
                 match_ratio = temp_ratio
@@ -618,8 +637,8 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
             first_item_name =  first_item_name + " " + title
                 
             temp_ratio = difflib.SequenceMatcher(None, 
-                stripString(first_item_name), 
-                stripString(scrape_query)).ratio()
+                cleanMatch(first_item_name), 
+                cleanMatch(scrape_query)).ratio()
             
             if first_item['shootId']:
                 if first_item['shootId'] in scene_title:
@@ -651,11 +670,19 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
             #print(first_item_name)
 
         if match_studio == True and scene['date'] is None:
-            print("no date")
-            print(first_item_name)
+            if  match_ratio > 0.9 or (studio_name == "Wake Up 'N Fuck"):
+                matched_scene = first_item
+                matched_item_name = first_item_name
+            else:
+                print("no date")
+                print(first_item_name)
         elif match_studio == True and close_date == True:
-            print("close date")
-            print(first_item_name)
+            if  match_ratio > 0.9 or (studio_name == "SweetyX"):
+                matched_scene = first_item
+                matched_item_name = first_item_name
+            else:
+                print("close date")
+                print(first_item_name)
 
         if match_studio == True and match_ratio > 0.9:
             # print("matched studio and 90%")
@@ -698,11 +725,15 @@ def autoDisambiguateResults(scene, scrape_query, scraped_data):
             matched_scene = first_item
             matched_item_name = first_item_name
         elif close_studio == True and len(scraped_data) == 1:
-            print ("close_studio " + str(match_ratio))
-            print(first_item_name);
-            new_item = copy.deepcopy(first_item)
-            new_item['date'] = scene['date']
-            scraped_data.append(new_item)
+            if studio_name == "Porn Mega Load" and match_date == True and match_ratio > 0.9:
+                matched_scene = first_item
+                matched_item_name = first_item_name
+            else:
+                print ("close_studio " + str(match_ratio))
+                print(first_item_name);
+                new_item = copy.deepcopy(first_item)
+                new_item['date'] = scene['date']
+                scraped_data.append(new_item)
 
         # print(first_item_name)
         
@@ -731,7 +762,7 @@ def manuallyDisambiguateResults(scraped_data):
             for scraped_performer in scene["actors"]:
                 not_female = False
                  
-                if keyIsSet(scraped_performer, ["gender"]) and scraped_performer["gender"] != 'female':
+                if keyIsSet(scraped_performer, ["gender"]) and scraped_performer["gender"] == 'male':
                     not_female = True
 
                 if (not_female):
@@ -835,7 +866,7 @@ def getQuery(scene):
         scene = scrubScene(scene, dirs, file_name)
 
         if keyIsSet(scene, ["studio", "name"]):
-            scrape_query = scrape_query + ' ' + cleanString(scene['studio']['name'])
+            scrape_query = scrape_query + ' ' + slugify(scene['studio']['name'])
 
         if scene['date']:
             scrape_query = scrape_query + ' ' + scene['date']
@@ -846,7 +877,7 @@ def getQuery(scene):
 
 def getChannelsName(studio):
     global channels
-    name = stripString(studio['name'])
+    name = slugify(studio['name'])
     channel_type = 'channel'
     
     if name.endswith(config.studio_network_suffix.lower().strip()):
@@ -855,8 +886,8 @@ def getChannelsName(studio):
         return None
     
     for channel in channels:
-        channel_name = stripString(channel['name'])
-        channel_slug = stripString(channel['slug'])
+        channel_name = slugify(channel['name'])
+        channel_slug = slugify(channel['slug'])
         
         if channel_type == 'channel':
             if (channel_name == name or channel_slug == name):
@@ -865,8 +896,8 @@ def getChannelsName(studio):
                 return channel
                 
             if keyIsSet(channel, ['parent']) and channel["parent"] is not None:
-                channel_name = stripString(channel["parent"]["name"])
-                channel_slug = stripString(channel["parent"]["slug"])
+                channel_name = slugify(channel["parent"]["name"])
+                channel_slug = slugify(channel["parent"]["slug"])
                 if (channel_name == name or channel_slug == name):
                     channel["parent"]['type'] = 'channel'
                     channel["parent"]['name'] = channel["parent"]['name'].replace(config.studio_network_suffix, '')
@@ -891,7 +922,6 @@ def scrapeStudio(studio):
     global my_stash
     
     channel = getChannelsName(studio)
-    name = stripString(studio['name'])
     if channel is None: 
         return channel
     
@@ -963,7 +993,7 @@ def scrapeScene(scene):
             my_stash.updateSceneData(scene_data)
             print(bcolors.FAIL + "No data found for: [{}]".format(scrape_query) + bcolors.ENDC)
     except Exception as e:
-        logging.error("Exception encountered when scraping '" + scrape_query, exc_info=True)
+        logging.error("Exception encountered when scraping '" + scrape_query, True)
 
 
 def manConfirmAlias(scraped_performer, site):  #Returns scraped_performer if response is positive, None otherwise.  If Always or Site are selected, scraped_performer is updated to include a new alias
@@ -1091,7 +1121,7 @@ def updateSceneFromScrape(scene_data, scraped_scene, path=""):
                 search_name = performer_name                 
                 stash_performer = my_stash.getPerformerByName(performer_name)
                 add_this_performer = False
-                if not stash_performer and not " " in performer_name:
+                if not stash_performer and not " " in performer_name and not "-" in performer_name:
                     search_name = performer_name + " (" + scraped_studio['name'] + ")"
                     stash_performer = my_stash.getPerformerByName(search_name)
                 if stash_performer:
